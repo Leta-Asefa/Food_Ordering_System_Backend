@@ -23,8 +23,8 @@ app.use(cors({
   credentials: true // Allow credentials (cookies) to be sent
 }));
 
-const authRouter = require('./Routes/auth.js')
- app.use('/auth', authRouter)
+const userRouter = require('./Routes/user.js')
+ app.use('/user', userRouter)
 
 
 // const foldersRouter = require('./Routes/folders.js')
