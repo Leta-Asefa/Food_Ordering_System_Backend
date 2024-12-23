@@ -1,79 +1,57 @@
 const mongoose = require('mongoose');
 
-// Define the Review schema
-const reviewSchema = new mongoose.Schema({
-    comment: {
-        type: String,
-        required: true
-    },
-    author: {
-        type: String,
-        required: true
-    }
-});
 
-// Define the Item schema
 const itemSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: [true, 'Name is required']
     },
     price: {
         type: Number,
-        required: true
+        required: [true, 'Price is required']
     },
     description: {
         type: String,
-        required: true
+        required: [true, 'Description is required']
     },
     image: {
-        type: String,  // Store the path to the image as a string
-        required: true
-    },
-    isFasting: {
         type: String,
-        enum: ['Yes', 'No'],
-        required: true
+        required: [true, 'Image path is required']
     },
-    reviews: {
-        rating: {
-            type: Number,
-            required: true,
-            min: 0,
-            max: 5
-        },
-        reviewCount: {
-            type: Number,
-            required: true
-        },
-        comments: [reviewSchema]
-    },
-    calories: {
+    rating: {
         type: Number,
         required: true
     },
+    isFasting: {
+        type: Boolean,
+        required: [true, 'Fasting information is required']
+    },
+    calories: {
+        type: Number,
+        required: [true, 'Calories information is required']
+    },
     nutritionalInformation: {
         protein: {
-            type: String,
-            required: true
+            type: Number,
+            required: [true, 'Protein information is required']
         },
         totalCarbohydrates: {
-            type: String,
-            required: true
+            type: Number,
+            required: [true, 'Total carbohydrates information is required']
         },
         totalFat: {
-            type: String,
-            required: true
+            type: Number,
+            required: [true, 'Total fat information is required']
         }
     },
     preparationTime: {
         type: String,
-        required: true
+        required: [true, 'Preparation time is required']
     },
     allergensInformation: [
         {
             type: String,
-            required: true
+            required: [true, 'Allergen information is required']
         }
     ]
 });

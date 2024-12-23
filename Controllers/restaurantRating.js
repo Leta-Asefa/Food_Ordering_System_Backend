@@ -1,4 +1,4 @@
-const Rating = require('../Models/Rating');
+const Rating = require('../Models/RestaurantRating');
 const Restaurant = require('../Models/Restaurant');
 
 // Function to add a rating

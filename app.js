@@ -31,12 +31,15 @@ const restaurantRouter = require('./Routes/restaurant.js')
 app.use('/restaurant', restaurantRouter)
 
 
-// const itemRouter = require('./Routes/item.js')
-// app.use('/item', itemRouter)
+const itemRouter = require('./Routes/item.js')
+app.use('/item', itemRouter)
 
-// const promotionRouter = require('./Routes/promotion.js')
-// app.use('/promotion', promotionRouter)
+const promotionRouter = require('./Routes/promotion.js')
+app.use('/promotion', promotionRouter)
 
 
-const ratingRouter = require('./Routes/rating.js')
-app.use('/rating', ratingRouter)
+const restaurantRatingRouter = require('./Routes/restaurantRating.js')
+app.use('/restaurant_rating', restaurantRatingRouter)
+
+const itemRatingRouter = require('./Routes/itemRating.js')
+app.use('/item_rating', itemRatingRouter)

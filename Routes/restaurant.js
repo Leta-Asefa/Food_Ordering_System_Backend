@@ -3,7 +3,7 @@ const router = express.Router();
 const {createRestaurant,getAllRestaurants,getRestaurantById,updateRestaurant,deleteRestaurant} = require('../Controllers/restaurant'); // Adjust the path to your controller
 
 // Define the routes and map them to the controller functions
-router.post('/create', createRestaurant);
+router.post('/add', createRestaurant);
 router.get('/all', getAllRestaurants);
 router.get('/:id', getRestaurantById);
 router.put('/update/:id', updateRestaurant);
