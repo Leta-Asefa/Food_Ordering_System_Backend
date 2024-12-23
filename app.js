@@ -1,12 +1,12 @@
 const express = require('express')
 const mongoose = require('mongoose')
-const cors=require('cors')
-const path=require('path')
+const cors = require('cors')
+const path = require('path')
 require('dotenv').config();
-const cookieParser=require('cookie-parser')
+const cookieParser = require('cookie-parser')
 const app = express()
 const DBURL = 'mongodb://localhost:27017/DMS' // don't forget to add the hostname,port ... to .env 
-const PORT =process.env.PORT || 4000
+const PORT = process.env.PORT || 4000
 // const DBURL='mongodb+srv://root:0991@cluster0.dkanjkl.mongodb.net/TourAndTravelAgency' //for remote database access
 mongoose.connect(DBURL)
 const connection = mongoose.connection
@@ -24,12 +24,19 @@ app.use(cors({
 }));
 
 const userRouter = require('./Routes/user.js')
- app.use('/user', userRouter)
+app.use('/user', userRouter)
 
 
-// const foldersRouter = require('./Routes/folders.js')
-// app.use('/folders', foldersRouter)
+const restaurantRouter = require('./Routes/restaurant.js')
+app.use('/restaurant', restaurantRouter)
 
 
-// const notificationRouter = require('./Routes/notification.js')
-// app.use('/notification', notificationRouter)
+// const itemRouter = require('./Routes/item.js')
+// app.use('/item', itemRouter)
+
+// const promotionRouter = require('./Routes/promotion.js')
+// app.use('/promotion', promotionRouter)
+
+
+const ratingRouter = require('./Routes/rating.js')
+app.use('/rating', ratingRouter)

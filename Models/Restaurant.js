@@ -25,18 +25,16 @@ const restaurantSchema = new mongoose.Schema({
         type: String,  // Store the path to the image as a string
         required: true
     },
-    rating: {
-        type: Number,
-        required: true,
-        min: 0,
-        max: 5
-    },
     cuisine: {
         type: String,
         required: true
     },
     priceRange: {
         type: String,
+        required: true
+    },
+    rating: {
+        type: Number,
         required: true
     },
     address: {
