@@ -1,4 +1,5 @@
 const Restaurant = require('../Models/Restaurant'); // Adjust the path to your Restaurant model
+const { io } = require('../socket/socket');
 
 // Create a new restaurant
 const createRestaurant = async (req, res) => {
@@ -6,6 +7,11 @@ const createRestaurant = async (req, res) => {
     try {
         const newRestaurant = new Restaurant(req.body);
         await newRestaurant.save();
+       
+        const newUnapprovedRestaurants = await Restaurant.find({isApproved:false,status:'New'});
+        io.to('super_admin').emit('newapplicants',newUnapprovedRestaurants)
+        
+
         res.status(201).json(newRestaurant);
     } catch (error) {
         console.log(error)
@@ -26,8 +32,8 @@ const getAllRestaurants = async (req, res) => {
 const getNewUnapproved = async (req, res) => {
     console.log('request recieved .../getNewUnapproved ')
     try {
-        const restaurants = await Restaurant.find({isApproved:false,status:'New'});
-        res.status(200).json(restaurants);
+        const newUnapprovedRestaurants = await Restaurant.find({isApproved:false,status:'New'});
+        res.status(200).json(newUnapprovedRestaurants);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching restaurants', error });
     }
