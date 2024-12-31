@@ -1,5 +1,10 @@
 const Restaurant = require('../Models/Restaurant'); // Adjust the path to your Restaurant model
 const { io } = require('../socket/socket');
+const jwt = require('jsonwebtoken')
+
+function createToken(id) {
+    return jwt.sign({ id }, process.env.JWT_SECRET_KEY, { expiresIn: process.env.JWT_EXPIRATION })
+}
 
 // Create a new restaurant
 const createRestaurant = async (req, res) => {
@@ -78,11 +83,34 @@ const deleteRestaurant = async (req, res) => {
     }
 };
 
+const login = async (req, res) => {
+
+    const { phoneNumber, password } = req.body
+    try {
+
+        const restaurant = await Restaurant.login(phoneNumber, password)
+        const token = createToken(restaurant._id)
+
+
+        res.cookie('jwt', token)
+        console.log('Logged in successfully',token)
+        res.json({ restaurant, token })
+
+
+
+    } catch (err) {
+        console.log("error " + err)
+        res.json({ 'error': err.message })
+    }
+
+}
+
 module.exports = {
     createRestaurant,
     getAllRestaurants,
     getRestaurantById,
     updateRestaurant,
     deleteRestaurant,
-    getNewUnapproved
+    getNewUnapproved,
+    login
 };
