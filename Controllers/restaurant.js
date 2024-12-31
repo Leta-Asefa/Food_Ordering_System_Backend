@@ -2,11 +2,13 @@ const Restaurant = require('../Models/Restaurant'); // Adjust the path to your R
 
 // Create a new restaurant
 const createRestaurant = async (req, res) => {
+    console.log('request recieved !')
     try {
         const newRestaurant = new Restaurant(req.body);
         await newRestaurant.save();
         res.status(201).json(newRestaurant);
     } catch (error) {
+        console.log(error)
         res.status(500).json({ message: 'Error creating restaurant', error });
     }
 };
@@ -15,6 +17,16 @@ const createRestaurant = async (req, res) => {
 const getAllRestaurants = async (req, res) => {
     try {
         const restaurants = await Restaurant.find();
+        res.status(200).json(restaurants);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching restaurants', error });
+    }
+};
+// Get all new unapproved restaurants
+const getNewUnapproved = async (req, res) => {
+    console.log('request recieved .../getNewUnapproved ')
+    try {
+        const restaurants = await Restaurant.find({isApproved:false,status:'New'});
         res.status(200).json(restaurants);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching restaurants', error });
@@ -65,5 +77,6 @@ module.exports = {
     getAllRestaurants,
     getRestaurantById,
     updateRestaurant,
-    deleteRestaurant
+    deleteRestaurant,
+    getNewUnapproved
 };

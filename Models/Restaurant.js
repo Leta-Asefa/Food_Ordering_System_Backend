@@ -9,33 +9,26 @@ const restaurantSchema = new mongoose.Schema({
     location: {
         type: {
             type: String, // Don't do `{ location: { type: String } }`
-            enum: ['Point'], // 'location.type' must be 'Point'
-            required: true
+            enum: ['Point']
         },
         coordinates: {
-            type: [Number],
-            required: true
+            type: [Number]
         }
     },
     opened: {
-        type: Boolean,
-        required: true
+        type: Boolean
     },
     image: {
-        type: String,  // Store the path to the image as a string
-        required: true
+        type: String
     },
     cuisine: {
-        type: String,
-        required: true
+        type: String
     },
     priceRange: {
-        type: String,
-        required: true
+        type: String
     },
     rating: {
         type: Number,
-        required: true
     },
     address: {
         type: String,
@@ -44,7 +37,21 @@ const restaurantSchema = new mongoose.Schema({
     contact: {
         type: String,
         required: true
-    }
+    },
+    isApproved: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    licenseImage: {
+        type: String,  // Store the path to the image as a string
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['New', 'Deliquent', 'Terminated'],
+        default: 'New'
+    },
 });
 
 // Create a 2dsphere index on the location field

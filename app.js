@@ -19,7 +19,7 @@ app.use(express.json({ limit: '500mb' }));
 app.use(cookieParser())
 const frontendOrigin = process.env.FRONTEND_ORIGIN;
 app.use(cors({
-  origin: frontendOrigin,
+  origin: ['http://localhost:3000','http://localhost:2000'],
   credentials: true // Allow credentials (cookies) to be sent
 }));
 
@@ -49,3 +49,6 @@ app.use('/order', orderRouter)
 
 const paymentRouter = require('./Routes/payment.js')
 app.use('/payment', paymentRouter)
+
+const resadminRouter = require('./Routes/resadmin.js')
+app.use('/resadmin', resadminRouter)
