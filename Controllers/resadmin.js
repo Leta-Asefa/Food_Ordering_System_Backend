@@ -1,4 +1,5 @@
 const Restaurant = require('../Models/Restaurant'); // Adjust the path to your Restaurant model
+const sendApprovalEmail = require('../NodeMailer/send_email');
 
 // Approve a restaurant
 const approve = async (req, res) => {
@@ -18,6 +19,8 @@ const approve = async (req, res) => {
 
         // Save the updated restaurant
         await restaurant.save();
+        sendApprovalEmail('letaasefa30@gmail.com', ' Tranquil ')
+
 
         res.status(200).json(restaurant);
     } catch (error) {
