@@ -4,7 +4,8 @@ const bcrypt =require('bcrypt')
 const restaurantSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: [true,'Name can not be empty'],
+        unique:[true,'This name is already registered !']
     },
     location: {
         type: {
@@ -36,7 +37,8 @@ const restaurantSchema = new mongoose.Schema({
     },
     contact: {
         type: String,
-        required: true
+        required: [true,'Phone Number can not be empty !'],
+        unique:[true,'This Phone Number is already registered !, Try again with another Phone Number']
     },
     isApproved: {
         type: Boolean,
@@ -45,7 +47,7 @@ const restaurantSchema = new mongoose.Schema({
     },
     licenseImage: {
         type: String,  // Store the path to the image as a string
-        required: true
+        required: [true,'License Image can not be empty']
     },
     status: {
         type: String,
@@ -54,8 +56,8 @@ const restaurantSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
-        minlength: 6
+        required: [true,'Password can not be empty'],
+        minlength: [8,'Password should be at least 8 charcters']
     }
 });
 

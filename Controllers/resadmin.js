@@ -19,7 +19,7 @@ const approve = async (req, res) => {
 
         // Save the updated restaurant
         await restaurant.save();
-        sendApprovalEmail('letaasefa30@gmail.com', ' Tranquil ')
+      //  sendApprovalEmail('letaasefa30@gmail.com', ' Tranquil ')
 
 
         res.status(200).json(restaurant);

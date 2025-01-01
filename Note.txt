@@ -1,0 +1,9 @@
+* Mongoose doesn't support custome error message for unique property
+* unique:[true,'This name is already registered !'] if you put it without array ( unique: true) then you can't access err.cause * if (err.cause.code === 11000) {
+            // Handle unique constraint errors
+            const field = Object.keys(err.cause.keyValue)[0];
+            errors[field] = `This ${field.charAt(0).toUpperCase() + field.slice(1)} is already registered !`;
+        }
+
+
+
