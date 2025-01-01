@@ -94,9 +94,12 @@ const getRestaurantById = async (req, res) => {
 // Update a restaurant by ID
 const updateRestaurant = async (req, res) => {
     console.log('request recieved /restarant/update')
-    console.log(req.body)
+    console.log('----------',req.body)
     try {
         const updatedRestaurant = await Restaurant.findByIdAndUpdate(req.body._id, req.body, { new: true, runValidators: true });
+
+       console.log(updatedRestaurant)
+
         if (!updatedRestaurant) {
             return res.status(404).json({ message: 'Restaurant not found' });
         }

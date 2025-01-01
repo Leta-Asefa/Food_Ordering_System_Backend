@@ -1,9 +1,39 @@
-* Mongoose doesn't support custome error message for unique property
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+* Mongoose doesn't support custom error message for unique property of the model field
 * unique:[true,'This name is already registered !'] if you put it without array ( unique: true) then you can't access err.cause * if (err.cause.code === 11000) {
             // Handle unique constraint errors
             const field = Object.keys(err.cause.keyValue)[0];
             errors[field] = `This ${field.charAt(0).toUpperCase() + field.slice(1)} is already registered !`;
         }
+        
+------------------------------------------------------------------------------------------------------------------------------------------------
 
+* const updatedRestaurant = await Restaurant.findByIdAndUpdate(req.body._id, req.body, { new: true, runValidators: true });
 
+ Options ({ new: true, runValidators: true })
+new: true: By default, findByIdAndUpdate returns the document before it was updated. Setting new: true ensures that the method returns the updated document after the update operation.
+runValidators: true: This tells Mongoose to run schema validation before applying the update. If any of the new data doesn't pass validation (for example, a required field is missing or a field has an incorrect type), an error will be thrown.
 
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+How State Batching Works:
+1. Synchronous Updates in Event Handlers
+If you have multiple setState calls inside an event handler (or similar synchronous code), React groups those updates into one batch and schedules a single re-render:
+E.g
+function handleClick() {
+  setCount(count + 1);
+  setName('New Name');
+}
+Here, React will batch both updates and perform only one re-render.
+
+2. Asynchronous Updates (Outside Event Handlers)
+If setState is called inside asynchronous code, like in setTimeout,setInterval,Promise , React won’t batch those updates. Instead, it will schedule separate renders for each state update:
+E.g
+setTimeout(() => {
+  setCount(count + 1); // Triggers a re-render
+  setName('New Name'); // Triggers another re-render
+}, 1000);
+In this case, React will trigger two separate re-renders: one after setCount and another after setName.
+
+------------------------------------------------------------------------------------------------------------------------------------------------
