@@ -81,7 +81,7 @@ const getNewUnapproved = async (req, res) => {
 // Get a single restaurant by ID
 const getRestaurantById = async (req, res) => {
     try {
-        const restaurant = await Restaurant.findById(req.params.id);
+        const restaurant = await Restaurant.findOne({contact:req.params.id});
         if (!restaurant) {
             return res.status(404).json({ message: 'Restaurant not found' });
         }
@@ -93,13 +93,16 @@ const getRestaurantById = async (req, res) => {
 
 // Update a restaurant by ID
 const updateRestaurant = async (req, res) => {
+    console.log('request recieved /restarant/update')
+    console.log(req.body)
     try {
-        const updatedRestaurant = await Restaurant.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const updatedRestaurant = await Restaurant.findByIdAndUpdate(req.body._id, req.body, { new: true, runValidators: true });
         if (!updatedRestaurant) {
             return res.status(404).json({ message: 'Restaurant not found' });
         }
         res.status(200).json(updatedRestaurant);
     } catch (error) {
+        console.log(error)
         res.status(500).json({ message: 'Error updating restaurant', error });
     }
 };

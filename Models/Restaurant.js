@@ -51,7 +51,7 @@ const restaurantSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['New', 'Deliquent', 'Terminated'],
+        enum: ['New', 'Deliquent', 'Terminated','Normal'],
         default: 'New'
     },
     password: {
