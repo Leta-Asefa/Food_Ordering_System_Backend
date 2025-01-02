@@ -6,6 +6,11 @@ const orderSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    restaurantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Restaurant', // Assuming you have a Restaurant model
+        required: true,
+      },
     items: [
         {
             item: {
@@ -44,15 +49,12 @@ const orderSchema = new mongoose.Schema({
         },
         city: {
             type: String,
-            required: true
         },
         postalCode: {
             type: String,
-            required: true
         },
         country: {
             type: String,
-            required: true
         },
         latitude: {
             type: Number,

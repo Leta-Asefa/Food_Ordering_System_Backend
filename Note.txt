@@ -37,3 +37,9 @@ setTimeout(() => {
 In this case, React will trigger two separate re-renders: one after setCount and another after setName.
 
 ------------------------------------------------------------------------------------------------------------------------------------------------
+
+  const order = await Order.find({restaurantId:id}).populate('userId','name nationalId phoneNumber username').populate('items.item','name price');
+  This is how you gonna populate related models.
+  use '-password' if you want all fields but password (as the second argument)
+
+------------------------------------------------------------------------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 const express = require('express');
-const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder } = require('../Controllers/order');
+const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById } = require('../Controllers/order');
 const router = express.Router();
 
 // Create a new order
@@ -10,6 +10,12 @@ router.get('/all', getAllOrders);
 
 // Get an order by ID
 router.get('/:id', getOrderById);
+
+router.get('/restaurant/:id', getRestaurantOrderById);
+
+router.get('/user/:id', getUserOrderById);
+
+
 
 // Update order status
 router.put('/:id/status', updateOrderStatus);
