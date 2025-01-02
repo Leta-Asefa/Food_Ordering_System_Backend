@@ -61,6 +61,9 @@ const userSchema = new mongoose.Schema({
     }],
 
     // Delivery person-specific fields
+      employer:{
+        type: String
+      },
     assignedOrders: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order'

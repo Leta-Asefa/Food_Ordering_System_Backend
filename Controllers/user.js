@@ -35,6 +35,18 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+//------/get by employer------
+const getByEmployer = async (req, res) => {
+    try {
+        const users = await User.find({employer:req.params.employer,isActive:true},'username phoneNumber image' );
+        if(!users)
+            res.json({error:'Users Not Found'})
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching users', error });
+    }
+};
+
 
 const signup = async (req, res) => {
     const { username, password, phoneNumber, role } = req.body
@@ -106,6 +118,7 @@ module.exports = {
     signup,
     login,
     logout,
-    changePassword
+    changePassword,
+    getByEmployer
 
 };

@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 // Function to create a new order
 const createOrder = async (req, res) => {
     try {
-        const { userId, items, shippingAddress,paymentMethod } = req.body;
+        const { userId, items, shippingAddress, paymentMethod } = req.body;
 
         // Calculate total amount
         let totalAmount = 0;
@@ -68,13 +68,12 @@ const getRestaurantOrderById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const order = await Order.find({restaurantId:id}).populate('userId','name nationalId phoneNumber username').populate('items.item','name price').populate('deliveryPersonId','username phoneNumber image').populate('payment','status paymentDate amount paymentMethod');
+        const order = await Order.find({ restaurantId: id }).populate('userId', 'name nationalId phoneNumber username').populate('items.item', 'name price').populate('deliveryPersonId', 'username phoneNumber image').populate('payment', 'status paymentDate amount paymentMethod');
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        console.log(order)
         res.status(200).json(order);
     } catch (error) {
         console.error(error);
@@ -89,13 +88,12 @@ const getUserOrderById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const order = await Order.find({userId:id}).populate('userId','nationalId phoneNumber username').populate('items.item','name price').populate('restaurantId','name address').populate('deliveryPersonId','username phoneNumber');
+        const order = await Order.find({ userId: id }).populate('userId', 'nationalId phoneNumber username').populate('items.item', 'name price').populate('restaurantId', 'name address').populate('deliveryPersonId', 'username phoneNumber');
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        console.log(order)
         res.status(200).json(order);
     } catch (error) {
         console.error(error);
@@ -104,7 +102,30 @@ const getUserOrderById = async (req, res) => {
 };
 
 
+// Function to get Orders by status
+const getByStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.params
 
+        const orders = await Order.find({ restaurantId: id }).populate('userId', 'name nationalId phoneNumber username').populate('items.item', 'name price').populate('deliveryPersonId', 'username phoneNumber image').populate('payment', 'status paymentDate amount paymentMethod');
+
+
+        // Filter orders by status or payment status
+        const filteredOrders = orders.filter(order =>
+            order.status === status || (order.payment && order.payment.status === status)
+        );
+
+        if (!filteredOrders) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        res.status(200).json(filteredOrders);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
 
 // Function to get all orders
@@ -120,7 +141,6 @@ const getAllOrders = async (req, res) => {
 
 // Function to update order status
 const updateOrderStatus = async (req, res) => {
-    console.log("entered ")
 
     try {
         const { id } = req.params;
@@ -132,6 +152,27 @@ const updateOrderStatus = async (req, res) => {
         }
 
         order.status = status;
+        await order.save();
+        res.status(200).json({ message: 'Order status updated successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Function to update order status
+const updateDeliveryPerson = async (req, res) => {
+
+    try {
+        const { id } = req.params;
+        const { deliveryPersonId } = req.body;
+
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        order.deliveryPersonId = deliveryPersonId;
         await order.save();
         res.status(200).json({ message: 'Order status updated successfully' });
     } catch (error) {
@@ -158,4 +199,4 @@ const deleteOrder = async (req, res) => {
     }
 };
 
-module.exports = { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById };
+module.exports = { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById, getUserOrderById, updateDeliveryPerson, getByStatus };
