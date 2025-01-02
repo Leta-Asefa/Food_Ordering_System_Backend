@@ -16,6 +16,9 @@ const userSchema = new mongoose.Schema({
         default:'placeholder (FIN 123456543)'
     }
     ,
+    image: {
+        type: String
+    },
     password: {
         type: String,
         required: true,

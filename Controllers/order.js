@@ -68,7 +68,7 @@ const getRestaurantOrderById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const order = await Order.find({restaurantId:id}).populate('userId','name nationalId phoneNumber username').populate('items.item','name price');
+        const order = await Order.find({restaurantId:id}).populate('userId','name nationalId phoneNumber username').populate('items.item','name price').populate('deliveryPersonId','username phoneNumber image').populate('payment','status paymentDate amount paymentMethod');
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
@@ -89,7 +89,7 @@ const getUserOrderById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const order = await Order.find({userId:id}).populate('userId','name nationalId phoneNumber username').populate('items.item','name price').populate('restaurantId','name address');
+        const order = await Order.find({userId:id}).populate('userId','nationalId phoneNumber username').populate('items.item','name price').populate('restaurantId','name address').populate('deliveryPersonId','username phoneNumber');
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
@@ -120,6 +120,8 @@ const getAllOrders = async (req, res) => {
 
 // Function to update order status
 const updateOrderStatus = async (req, res) => {
+    console.log("entered ")
+
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -131,7 +133,7 @@ const updateOrderStatus = async (req, res) => {
 
         order.status = status;
         await order.save();
-        res.status(200).json({ message: 'Order status updated successfully', order });
+        res.status(200).json({ message: 'Order status updated successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
