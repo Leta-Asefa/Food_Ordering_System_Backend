@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 
 
 const itemSchema = new mongoose.Schema({
+    restaurandId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Restaurant",
+        required: true
+    },
     name: {
         type: String,
         required: [true, 'Name is required']
@@ -54,6 +59,11 @@ const itemSchema = new mongoose.Schema({
             required: [true, 'Allergen information is required']
         }
     ]
+    , type: {
+        type: String,
+        enum: ['Food', 'Drink', 'Catering'],
+        required: true
+    },
 });
 
 // Create the Item model

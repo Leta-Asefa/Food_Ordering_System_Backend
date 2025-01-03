@@ -21,6 +21,36 @@ exports.getAllItems = async (req, res) => {
     }
 };
 
+// Get all food
+exports.getAllFood = async (req, res) => {
+    try {
+        const items = await Item.find({type:'Food'});
+        res.status(200).json(items);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Get all drink
+exports.getAllDrink = async (req, res) => {
+    try {
+        const items = await Item.find({type:'Drink'});
+        res.status(200).json(items);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Get all catering
+exports.getAllCatering = async (req, res) => {
+    try {
+        const items = await Item.find({type:'Catering'});
+        res.status(200).json(items);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Get an item by ID
 exports.getItemById = async (req, res) => {
     try {
@@ -41,7 +71,7 @@ exports.updateItemById = async (req, res) => {
         if (!updatedItem) {
             return res.status(404).json({ message: 'Item not found' });
         }
-        res.status(200).json(updatedItem);
+        res.status(200).json({message:'Item Updated successfully !'});
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
