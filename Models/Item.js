@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 
 const itemSchema = new mongoose.Schema({
-    restaurandId: {
+    restaurantId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Restaurant",
         required: true
@@ -25,7 +25,6 @@ const itemSchema = new mongoose.Schema({
     },
     rating: {
         type: Number,
-        required: true
     },
     isFasting: {
         type: Boolean,
