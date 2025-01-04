@@ -3,7 +3,7 @@ const Payment = require('../Models/Payment');
 // Create a new payment
 const createPayment = async (req, res) => {
   try {
-    const { orderId, userId, amount, paymentMethod,restaurantId } = req.body;
+    const { orderId, userId, amount, paymentMethod, restaurantId } = req.body;
 
     if (!orderId || !userId || !amount || !paymentMethod) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -80,32 +80,73 @@ const updatePaymentStatus = async (req, res) => {
 
 
 const getAllPaymentsByRestaurant = async (req, res) => {
-    try {
-      const { restaurantId } = req.params;
-  
-      if (!restaurantId) {
-        return res.status(400).json({ message: 'Restaurant ID is required' });
-      }
-  
-      const payments = await Payment.find({ restaurantId })
-        .populate('orderId userId')
-        .sort({ createdAt: -1 }); // Sort by latest payments first
-  
-      if (!payments.length) {
-        return res.status(404).json({ message: 'No payments found for this restaurant' });
-      }
-  
-      res.status(200).json(payments);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
+ 
+  try {
+    const { restaurantId } = req.params;
+
+    if (!restaurantId) {
+      return res.json({ message: 'Restaurant ID is required' });
     }
-  };
+
+    const payments = await Payment.find({ restaurantId })
+    .populate({
+      path: 'orderId',
+      populate: {
+        path: 'items.item',
+        select: 'name price',
+      },
+    })
+    .populate('userId', '-password')
+    .populate('orderId.shippingAddress', 'address city')
+    .sort({ createdAt: -1 });
   
+
+    if (!payments.length) {
+      return res.json({ message: 'No payments found for this restaurant' });
+    }
+
+    res.status(200).json(payments);
+  } catch (error) {
+  console.log(error)
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+const getPaymentsByDateRange = async (req, res) => {
+  const { startDate, endDate, restaurantId } = req.params;
+
+  try {
+    const payments = await Payment.find({
+      restaurantId,
+      paymentDate: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    }).populate({
+      path: 'orderId',
+      populate: {
+        path: 'items.item',
+        select: 'name price',
+      },
+    })
+    .populate('userId', '-password')
+    .populate('orderId.shippingAddress', 'address city')
+    .sort({ createdAt: -1 });
+
+    res.status(200).json(payments);
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: 'Error fetching payments', error });
+  }
+};
+
 
 module.exports = {
   createPayment,
   getPaymentById,
   getAllPaymentsByUser,
   updatePaymentStatus,
-  getAllPaymentsByRestaurant
+  getAllPaymentsByRestaurant,
+  getPaymentsByDateRange
 };

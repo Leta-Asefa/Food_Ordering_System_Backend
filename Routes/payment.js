@@ -4,7 +4,8 @@ const {
   getPaymentById,
   getAllPaymentsByUser,
   updatePaymentStatus,
-  getAllPaymentsByRestaurant
+  getAllPaymentsByRestaurant,
+  getPaymentsByDateRange
 } = require('../Controllers/payment');
 
 const router = express.Router();
@@ -23,6 +24,9 @@ router.put('/:id/status', updatePaymentStatus);
 
 // routes/paymentRoutes.js
 router.get('/restaurant/:restaurantId', getAllPaymentsByRestaurant);
+
+// routes/paymentRoutes.js
+router.get('/restaurant/:restaurantId/:startDate/:endDate', getPaymentsByDateRange);
 
 
 module.exports = router;
