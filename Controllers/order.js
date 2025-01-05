@@ -107,9 +107,21 @@ const getByStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.params
-
-        const orders = await Order.find({ restaurantId: id }).populate('userId', 'name nationalId phoneNumber username').populate('items.item', 'name price').populate('deliveryPersonId', 'username phoneNumber image').populate('payment', 'status paymentDate amount paymentMethod');
-
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        const orders = await Order.find({
+            restaurantId: id,
+            createdAt: { $gte: startOfDay, $lte: endOfDay }
+        })
+        .populate('userId', 'name nationalId phoneNumber username')
+        .populate('items.item', 'name price')
+        .populate('deliveryPersonId', 'username phoneNumber image')
+        .populate('payment', 'status paymentDate amount paymentMethod');
+        
 
         // Filter orders by status or payment status
         const filteredOrders = orders.filter(order =>

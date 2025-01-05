@@ -115,7 +115,6 @@ const getAllPaymentsByRestaurant = async (req, res) => {
 
 const getPaymentsByDateRange = async (req, res) => {
   const { startDate, endDate, restaurantId } = req.params;
-
   try {
     const payments = await Payment.find({
       restaurantId,

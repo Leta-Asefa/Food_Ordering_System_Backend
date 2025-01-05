@@ -1,91 +1,133 @@
 const Promotion = require('../Models/Promotion');
+const Restaurant = require('../Models/Restaurant');
 
-// Function to add a new promotion
-const addPromotion = async (req, res) => {
+/**
+ * Add a new promotion while ensuring no conflicts exist.
+ */
+exports.addPromotion = async (req, res) => {
     try {
-        const { imageUrl, title, description, restaurantName, restaurantId, priority, durationInDays } = req.body;
+        const { restaurantId, tier, date, image, title, description } = req.body;
+
+        // Validate required fields
+        if (!restaurantId || !tier || !date || !image || !title || !description) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        // Check if the restaurant exists
+        const restaurant = await Restaurant.findById(restaurantId);
+        if (!restaurant) {
+            return res.status(404).json({ message: 'Restaurant not found' });
+        }
+
+        // Check for conflicts: No two promotions of the same tier can exist on the same date
+        const conflict = await Promotion.findOne({ tier, date });
+
+        if (conflict) {
+            return res.json({ message: `The ${tier} promotion slot is already taken for this date.` });
+        }
+
+        // Create the new promotion
         const newPromotion = new Promotion({
-            imageUrl,
-            title,
-            description,
-            restaurantName,
             restaurantId,
-            priority,
-            durationInDays
+            tier,
+            date,
+            image,
+            title,
+            description
         });
+
         await newPromotion.save();
-        res.status(201).json({ message: 'Promotion added successfully', promotion: newPromotion });
+        return res.status(201).json({ message: 'Promotion created successfully', promotion: newPromotion });
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-// Function to get all promotions
-const getPromotions = async (req, res) => {
+/**
+ * Get all promotions that are scheduled for today or in the future.
+ */
+exports.getPromotions = async (req, res) => {
     try {
-        const promotions = await Promotion.find().sort({ priority: 1, startDate: -1 });
-        res.status(200).json(promotions);
+        // Remove time part from today's date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const promotions = await Promotion.find({ date: { $gte: today } })
+            .populate('restaurantId', 'name');
+
+        return res.status(200).json(promotions);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-// Function to get a promotion by ID
-const getPromotionById = async (req, res) => {
+
+/**
+ * Get a single promotion by ID.
+ */
+exports.getPromotionById = async (req, res) => {
     try {
-        const { id } = req.params;
-        const promotion = await Promotion.findById(id);
+        const promotion = await Promotion.findById(req.params.id).populate('restaurantId', 'name');
         if (!promotion) {
             return res.status(404).json({ message: 'Promotion not found' });
         }
-        res.status(200).json(promotion);
+        return res.status(200).json(promotion);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-// Function to update a promotion
-const updatePromotion = async (req, res) => {
+/**
+ * Update a promotion while ensuring no conflicts exist.
+ */
+exports.updatePromotion = async (req, res) => {
     try {
-        const { id } = req.params;
-        const { imageUrl, title, description, restaurantName, restaurantId, priority, durationInDays } = req.body;
-        const promotion = await Promotion.findById(id);
+        const { tier, date, image, title, description } = req.body;
+
+        // Find the promotion
+        let promotion = await Promotion.findById(req.params.id);
         if (!promotion) {
             return res.status(404).json({ message: 'Promotion not found' });
         }
-        promotion.imageUrl = imageUrl;
-        promotion.title = title;
-        promotion.description = description;
-        promotion.restaurantName = restaurantName;
-        promotion.restaurantId = restaurantId;
-        promotion.priority = priority;
-        promotion.durationInDays = durationInDays;
 
-        await promotion.save();
-        res.status(200).json({ message: 'Promotion updated successfully', promotion });
+        // Check for conflicts if the tier or date is being changed
+        if (tier || date) {
+            const conflict = await Promotion.findOne({
+                tier: tier || promotion.tier,
+                date: date || promotion.date,
+                _id: { $ne: req.params.id } // Exclude the current promotion from conflict check
+            });
+
+            if (conflict) {
+                return res.status(409).json({ message: `The ${tier || promotion.tier} promotion slot is already taken for this date.` });
+            }
+        }
+
+        // Update the promotion
+        promotion = await Promotion.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        return res.status(200).json({ message: 'Promotion updated successfully', promotion });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-// Function to delete a promotion
-const deletePromotion = async (req, res) => {
+/**
+ * Delete a promotion.
+ */
+exports.deletePromotion = async (req, res) => {
     try {
-        const { id } = req.params;
-        const promotion = await Promotion.findById(id);
+        const promotion = await Promotion.findByIdAndDelete(req.params.id);
         if (!promotion) {
             return res.status(404).json({ message: 'Promotion not found' });
         }
-        await promotion.remove();
-        res.status(200).json({ message: 'Promotion deleted successfully' });
+        return res.status(200).json({ message: 'Promotion deleted successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
-
-module.exports = { addPromotion, getPromotions, getPromotionById, updatePromotion, deletePromotion };
