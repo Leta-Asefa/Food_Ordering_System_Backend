@@ -1,4 +1,9 @@
 const Payment = require('../Models/Payment');
+const { Chapa } = require('chapa-nodejs');
+const chapa = new Chapa({
+  secretKey: "CHASECK_TEST-yupCbRiOJ1FcfUGReVpFioCC3YZiLYXp"
+});
+
 
 // Create a new payment
 const createPayment = async (req, res) => {
@@ -80,7 +85,7 @@ const updatePaymentStatus = async (req, res) => {
 
 
 const getAllPaymentsByRestaurant = async (req, res) => {
- 
+
   try {
     const { restaurantId } = req.params;
 
@@ -89,17 +94,17 @@ const getAllPaymentsByRestaurant = async (req, res) => {
     }
 
     const payments = await Payment.find({ restaurantId })
-    .populate({
-      path: 'orderId',
-      populate: {
-        path: 'items.item',
-        select: 'name price',
-      },
-    })
-    .populate('userId', '-password')
-    .populate('orderId.shippingAddress', 'address city')
-    .sort({ createdAt: -1 });
-  
+      .populate({
+        path: 'orderId',
+        populate: {
+          path: 'items.item',
+          select: 'name price',
+        },
+      })
+      .populate('userId', '-password')
+      .populate('orderId.shippingAddress', 'address city')
+      .sort({ createdAt: -1 });
+
 
     if (!payments.length) {
       return res.json({ message: 'No payments found for this restaurant' });
@@ -107,7 +112,7 @@ const getAllPaymentsByRestaurant = async (req, res) => {
 
     res.status(200).json(payments);
   } catch (error) {
-  console.log(error)
+    console.log(error)
     res.status(500).json({ message: error.message });
   }
 };
@@ -129,9 +134,9 @@ const getPaymentsByDateRange = async (req, res) => {
         select: 'name price',
       },
     })
-    .populate('userId', '-password')
-    .populate('orderId.shippingAddress', 'address city')
-    .sort({ createdAt: -1 });
+      .populate('userId', '-password')
+      .populate('orderId.shippingAddress', 'address city')
+      .sort({ createdAt: -1 });
 
     res.status(200).json(payments);
   } catch (error) {
@@ -141,11 +146,54 @@ const getPaymentsByDateRange = async (req, res) => {
 };
 
 
+
+const getPaymentPage = async (req, res) => {
+  const { phoneNumber, amount, firstName } = req.body
+  console.log(req.body)
+  const response = await generateTransactionReference(phoneNumber, amount, firstName)
+  if (response.status === 'success') {
+
+    res.status(201).json({ checkout_url: response.data.checkout_url });
+  } else {
+    res.status(400).json({ error: "make sure that you entered all the required fields " });
+  }
+
+};
+
+
+
+const generateTransactionReference = async (phoneNumber, amount, firstName) => {
+  const tx_ref = await chapa.genTxRef();
+  console.log(tx_ref)
+  const response = await chapa.initialize({
+    phone_number: phoneNumber,
+    first_name: firstName,
+    amount: amount,
+    currency: 'ETB',
+    tx_ref: tx_ref,
+    callback_url: 'http://localhost:3000/',
+
+  });
+  return response
+
+
+}
+
+const verify = async (tx_ref) => {
+  const response = await chapa.verify({ tx_ref });
+  response.data.status === 'success' ? true : false
+
+}
+
+
+
 module.exports = {
   createPayment,
   getPaymentById,
   getAllPaymentsByUser,
   updatePaymentStatus,
   getAllPaymentsByRestaurant,
-  getPaymentsByDateRange
+  getPaymentsByDateRange,
+  getPaymentPage,
+  verify
 };

@@ -5,6 +5,9 @@ const Restaurant = require('../Models/Restaurant');
  * Add a new promotion while ensuring no conflicts exist.
  */
 exports.addPromotion = async (req, res) => {
+
+
+
     try {
         const { restaurantId, tier, date, image, title, description } = req.body;
 
@@ -26,6 +29,7 @@ exports.addPromotion = async (req, res) => {
             return res.json({ message: `The ${tier} promotion slot is already taken for this date.` });
         }
 
+
         // Create the new promotion
         const newPromotion = new Promotion({
             restaurantId,
@@ -33,7 +37,8 @@ exports.addPromotion = async (req, res) => {
             date,
             image,
             title,
-            description
+            description,
+            paymentAmount: Number(getPaymentAmount(tier))
         });
 
         await newPromotion.save();
@@ -55,7 +60,7 @@ exports.getPromotions = async (req, res) => {
         today.setHours(0, 0, 0, 0);
 
         const promotions = await Promotion.find({ date: { $gte: today } })
-            .populate('restaurantId', 'name');
+            .populate('restaurantId', 'name').sort({date:1});
 
         return res.status(200).json(promotions);
     } catch (error) {
@@ -70,9 +75,9 @@ exports.getPromotions = async (req, res) => {
  */
 exports.getPromotionById = async (req, res) => {
     try {
-        const promotion = await Promotion.findById(req.params.id).populate('restaurantId', 'name');
+        const promotion = await Promotion.find({ restaurantId: req.params.restaurantId }).populate('restaurantId', 'name');
         if (!promotion) {
-            return res.status(404).json({ message: 'Promotion not found' });
+            return res.json({ message: 'Promotion not found' });
         }
         return res.status(200).json(promotion);
     } catch (error) {
@@ -116,6 +121,9 @@ exports.updatePromotion = async (req, res) => {
     }
 };
 
+
+
+
 /**
  * Delete a promotion.
  */
@@ -131,3 +139,26 @@ exports.deletePromotion = async (req, res) => {
         return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
+
+
+
+const getPaymentAmount = (tier) => {
+    if (tier === 'Platinum') return process.env.PLATINUM_PRICE
+    if (tier === 'Gold') return process.env.GOLD_PRICE
+    if (tier === 'Silver') return process.env.SILVER_PRICE
+    if (tier === 'Bronze') return process.env.BRONZE_PRICE
+    if (tier === 'Basic') return process.env.BASIC_PRICE
+}
+
+
+exports.getTierPriceList = (req, res) => {
+    res.json({
+        price: {
+            Platinum: process.env.PLATINUM_PRICE,
+            Gold: process.env.GOLD_PRICE,
+            Silver: process.env.SILVER_PRICE,
+            Bronze: process.env.BRONZE_PRICE,
+            Basic: process.env.BASIC_PRICE
+        }
+    })
+}
