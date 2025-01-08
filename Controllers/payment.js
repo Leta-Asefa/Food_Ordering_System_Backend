@@ -172,11 +172,9 @@ const generateTransactionReference = async (phoneNumber, amount, firstName, prom
     callback_url: 'http://localhost:3000/',
 
   });
-  console.log(response)
   
   if (response.status === 'success') {
     const promotion = await Promotion.findById(promotionId)
-    console.log(promotion)
     promotion.tx_ref = tx_ref
     await promotion.save()
   }

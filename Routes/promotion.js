@@ -19,7 +19,7 @@ router.get('/:restaurantId', getPromotionById);
 router.put('/:id', updatePromotion);
 
 // activate a promotion
-router.post('/activate/:id', activatePromotion);
+router.post('/activate', activatePromotion);
 
 // Delete a promotion
 router.delete('/:id', deletePromotion);

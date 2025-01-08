@@ -18,11 +18,15 @@ const promotionSchema = new mongoose.Schema({
     paymentAmount: { type: Number },
     tx_ref: { type: String,default:'' },
     description: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now, immutable: true } // Automatically set creation date
+    createdAt: { type: Date, default: Date.now, immutable: true }, // Automatically set creation date
+    expiresAt: { type: Date } 
 });
 
 // Ensure no duplicate promotions for the same tier on the same date
 promotionSchema.index({ tier: 1, date: 1 }, { unique: true });
+
+promotionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 
 const Promotion = mongoose.model('Promotion', promotionSchema);
 

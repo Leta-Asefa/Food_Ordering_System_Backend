@@ -1,5 +1,6 @@
 const Promotion = require('../Models/Promotion');
 const Restaurant = require('../Models/Restaurant');
+const crypto = require('crypto')
 const { verify } = require('./payment')
 
 /**
@@ -39,7 +40,8 @@ exports.addPromotion = async (req, res) => {
             image,
             title,
             description,
-            paymentAmount: Number(getPaymentAmount(tier))
+            paymentAmount: Number(getPaymentAmount(tier)),
+            expiresAt: new Date(Date.now() + parseInt(process.env.BOOK_EXPIRY_MINUTE, 10) * 60 * 1000)
         });
 
         await newPromotion.save();
@@ -125,22 +127,17 @@ exports.updatePromotion = async (req, res) => {
 
 exports.activatePromotion = async (req, res) => {
     try {
+        const hash = crypto.createHmac('sha256', process.env.CHAPA_WEBHOOK_SECRET_KEY).update(JSON.stringify(req.body)).digest('hex');
+      
+        if (hash == req.headers['x-chapa-signature']) {
 
-        const { id } = req.params
-        const promotion = await Promotion.findById(id);
-        console.log(promotion)
-        if (promotion.tx_ref === '') {
-            res.json({ error: "Please make a payment first !" })
-            return
-        }
-
-        const isPaid = verify(promotion.tx_ref)
-
-        if (isPaid) {
+            const promotion = await Promotion.findOne({ tx_ref: req.body.tx_ref })
             promotion.status = 'active'
+            promotion.expiresAt = undefined;
             await promotion.save()
-            res.json({ message: "Activated successfully !" })
+
         }
+
 
 
     } catch (error) {
