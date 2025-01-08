@@ -30,7 +30,6 @@ router.get('/restaurant/:restaurantId/:startDate/:endDate', getPaymentsByDateRan
 
 router.post('/test', getPaymentPage);
 
-router.get('/verify/:tx_ref', verify);
 
 
 module.exports = router;

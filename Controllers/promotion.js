@@ -1,5 +1,6 @@
 const Promotion = require('../Models/Promotion');
 const Restaurant = require('../Models/Restaurant');
+const { verify } = require('./payment')
 
 /**
  * Add a new promotion while ensuring no conflicts exist.
@@ -60,7 +61,7 @@ exports.getPromotions = async (req, res) => {
         today.setHours(0, 0, 0, 0);
 
         const promotions = await Promotion.find({ date: { $gte: today } })
-            .populate('restaurantId', 'name').sort({date:1});
+            .populate('restaurantId', 'name').sort({ date: 1 });
 
         return res.status(200).json(promotions);
     } catch (error) {
@@ -121,6 +122,32 @@ exports.updatePromotion = async (req, res) => {
     }
 };
 
+
+exports.activatePromotion = async (req, res) => {
+    try {
+
+        const { id } = req.params
+        const promotion = await Promotion.findById(id);
+        console.log(promotion)
+        if (promotion.tx_ref === '') {
+            res.json({ error: "Please make a payment first !" })
+            return
+        }
+
+        const isPaid = verify(promotion.tx_ref)
+
+        if (isPaid) {
+            promotion.status = 'active'
+            await promotion.save()
+            res.json({ message: "Activated successfully !" })
+        }
+
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
 
 
 

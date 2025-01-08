@@ -16,7 +16,7 @@ const promotionSchema = new mongoose.Schema({
     title: { type: String, required: true },
     status: { type: String, default:'inactive' },
     paymentAmount: { type: Number },
-    txt_ref: { type: String },
+    tx_ref: { type: String,default:'' },
     description: { type: String, required: true },
     createdAt: { type: Date, default: Date.now, immutable: true } // Automatically set creation date
 });

@@ -1,4 +1,5 @@
 const Payment = require('../Models/Payment');
+const Promotion = require('../Models/Promotion')
 const { Chapa } = require('chapa-nodejs');
 const chapa = new Chapa({
   secretKey: "CHASECK_TEST-yupCbRiOJ1FcfUGReVpFioCC3YZiLYXp"
@@ -148,11 +149,9 @@ const getPaymentsByDateRange = async (req, res) => {
 
 
 const getPaymentPage = async (req, res) => {
-  const { phoneNumber, amount, firstName } = req.body
-  console.log(req.body)
-  const response = await generateTransactionReference(phoneNumber, amount, firstName)
+  const { phoneNumber, amount, firstName, promotionId } = req.body
+  const response = await generateTransactionReference(phoneNumber, amount, firstName, promotionId)
   if (response.status === 'success') {
-
     res.status(201).json({ checkout_url: response.data.checkout_url });
   } else {
     res.status(400).json({ error: "make sure that you entered all the required fields " });
@@ -162,9 +161,8 @@ const getPaymentPage = async (req, res) => {
 
 
 
-const generateTransactionReference = async (phoneNumber, amount, firstName) => {
+const generateTransactionReference = async (phoneNumber, amount, firstName, promotionId) => {
   const tx_ref = await chapa.genTxRef();
-  console.log(tx_ref)
   const response = await chapa.initialize({
     phone_number: phoneNumber,
     first_name: firstName,
@@ -174,12 +172,21 @@ const generateTransactionReference = async (phoneNumber, amount, firstName) => {
     callback_url: 'http://localhost:3000/',
 
   });
+  console.log(response)
+  
+  if (response.status === 'success') {
+    const promotion = await Promotion.findById(promotionId)
+    console.log(promotion)
+    promotion.tx_ref = tx_ref
+    await promotion.save()
+  }
   return response
 
 
 }
 
 const verify = async (tx_ref) => {
+  console.log(tx_ref)
   const response = await chapa.verify({ tx_ref });
   response.data.status === 'success' ? true : false
 
