@@ -4,7 +4,7 @@ const {createRestaurant,getAllRestaurants,getRestaurantById,updateRestaurant,del
 
 // Define the routes and map them to the controller functions
 router.post('/add', createRestaurant);
-router.get('/all', getAllRestaurants);
+router.get('/all/near/:userLongitude/:userLatitude', getAllRestaurants);
 router.get('/new/unapproved', getNewUnapproved);
 router.get('/:id', getRestaurantById);
 router.put('/update/:id', updateRestaurant);

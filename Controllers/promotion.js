@@ -65,7 +65,13 @@ exports.getPromotions = async (req, res) => {
         const promotions = await Promotion.find({ date: { $gte: today } })
             .populate('restaurantId', 'name').sort({ date: 1 });
 
-        return res.status(200).json(promotions);
+        const tierOrder = ['Platinum', 'Gold', 'Silver', 'Bronze', 'Basic'];
+
+        const sortedPromotions = promotions.sort((a, b) => {
+            return tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier);
+        });
+
+        return res.status(200).json(sortedPromotions);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Internal Server Error' });
@@ -128,7 +134,7 @@ exports.updatePromotion = async (req, res) => {
 exports.activatePromotion = async (req, res) => {
     try {
         const hash = crypto.createHmac('sha256', process.env.CHAPA_WEBHOOK_SECRET_KEY).update(JSON.stringify(req.body)).digest('hex');
-      
+
         if (hash == req.headers['x-chapa-signature']) {
 
             const promotion = await Promotion.findOne({ tx_ref: req.body.tx_ref })

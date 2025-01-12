@@ -21,7 +21,7 @@ const addRating = async (req, res) => {
         // Otherwise, create a new rating
         const newRating = new Rating({
             restaurant: restaurantId,
-            user: userId,
+            user: userId, 
             rating,
             review
         });

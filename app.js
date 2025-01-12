@@ -19,7 +19,7 @@ app.use(express.json({ limit: '500mb' }));
 app.use(cookieParser())
 const frontendOrigin = process.env.FRONTEND_ORIGIN;
 app.use(cors({
-  origin: ['http://localhost:3000','http://localhost:3001'],
+  origin: ['http://localhost:3000','http://localhost:3001','http://localhost:8081'],
   credentials: true // Allow credentials (cookies) to be sent
 }));
 

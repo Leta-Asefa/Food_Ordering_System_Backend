@@ -38,9 +38,9 @@ const getAllUsers = async (req, res) => {
 //------/get by employer------
 const getByEmployer = async (req, res) => {
     try {
-        const users = await User.find({employer:req.params.employer,isActive:true},'username phoneNumber image' );
-        if(!users)
-            res.json({error:'Users Not Found'})
+        const users = await User.find({ employer: req.params.employer, isActive: true }, 'username phoneNumber image');
+        if (!users)
+            res.json({ error: 'Users Not Found' })
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching users', error });
@@ -49,8 +49,8 @@ const getByEmployer = async (req, res) => {
 
 
 const signup = async (req, res) => {
-    const { username, password, phoneNumber, role } = req.body
-    const data = { username, password, phoneNumber, role }
+    const { username, phoneNumber, password } = req.body
+    const data = { username, phoneNumber, password }
 
     try {
         const user = new User(data)
@@ -69,32 +69,30 @@ const signup = async (req, res) => {
 }
 
 const login = async (req, res) => {
-
     const { username, password } = req.body
     try {
 
         const user = await User.login(username, password)
         const token = createToken(user._id)
 
-
         res.cookie('jwt', token)
-        res.json({ user, token })
+        res.json(user)
 
 
 
     } catch (err) {
-        console.log("error " + err)
+        console.log("error *** " + err)
         res.json({ 'error': err.message })
     }
 
 }
 
-const logout= (req, res) => {
+const logout = (req, res) => {
     res.cookie('jwt', '')
     res.json({ 'status': "logged out successfully !" })
 }
 
-const changePassword=async (req, res) => {
+const changePassword = async (req, res) => {
     const { username, oldPassword, newPassword } = req.body
 
     try {

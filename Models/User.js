@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     nationalId: {
         type: String,
         minlength: 16,
-        default:'placeholder (FIN 123456543)'
+        default: 'placeholder (FIN 123456543)'
     }
     ,
     image: {
@@ -21,14 +21,7 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
-        minlength: 6
-    },
-    email: {
-        type: String,
-        unique: true,
-        lowercase: true,
-        trim: true
+        minlength: 1
     },
     phoneNumber: {
         type: String,
@@ -37,8 +30,8 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['customer', 'delivery', 'admin','super_admin'],
-        required: true
+        enum: ['customer', 'delivery', 'admin', 'super_admin'],
+        default: 'customer'
     },
     isActive: {
         type: Boolean,
@@ -61,16 +54,16 @@ const userSchema = new mongoose.Schema({
     }],
 
     // Delivery person-specific fields
-      employer:{
+    employer: {
         type: String
-      },
+    },
     assignedOrders: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order'
     }],
     deliveryStatus: {
         type: String,
-        enum: ['pending', 'in-progress', 'completed', 'failed', 'on-way','delayed','cancelled'],
+        enum: ['pending', 'in-progress', 'completed', 'failed', 'on-way', 'delayed', 'cancelled'],
         default: 'pending'
     },
     location: {
@@ -102,14 +95,17 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 };
 
 //for login
-userSchema.statics.login = async function(username, password) {
+userSchema.statics.login = async function (username, password) {
+
     const user = await this.findOne({ username })
+
     if (user) {
-        if ( await bcrypt.compare(password, user.password)) {
+        if (await bcrypt.compare(password, user.password)) {
+
             return user
         }
         throw Error("password is not correct")
-    }throw Error("username is not registered")
+    } throw Error("username is not registered")
 }
 
 

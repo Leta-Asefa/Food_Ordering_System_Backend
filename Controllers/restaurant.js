@@ -18,7 +18,7 @@ const createRestaurant = async (req, res) => {
 
 
         res.status(201).json({ restaurant: newRestaurant });
-    }  catch (err) {
+    } catch (err) {
         let errors = {
             name: '',
             location: '',
@@ -35,13 +35,13 @@ const createRestaurant = async (req, res) => {
             password: ''
         };
 
-      if(err.cause){
-        if (err.cause.code === 11000) {
-            // Handle unique constraint errors
-            const field = Object.keys(err.cause.keyValue)[0];
-            errors[field] = `This ${field.charAt(0).toUpperCase() + field.slice(1)} is already registered !`;
-        }
-     } else if (err instanceof mongoose.Error.ValidationError) {
+        if (err.cause) {
+            if (err.cause.code === 11000) {
+                // Handle unique constraint errors
+                const field = Object.keys(err.cause.keyValue)[0];
+                errors[field] = `This ${field.charAt(0).toUpperCase() + field.slice(1)} is already registered !`;
+            }
+        } else if (err instanceof mongoose.Error.ValidationError) {
             // Handle Mongoose validation errors
             Object.values(err.errors).forEach(({ properties }) => {
                 errors[properties.path] = properties.message;
@@ -58,10 +58,22 @@ const createRestaurant = async (req, res) => {
     }
 };
 
-// Get all restaurants
+// Get all Near restaurants in 10km radius
 const getAllRestaurants = async (req, res) => {
+    const{userLongitude,userLatitude}=req.params
     try {
-        const restaurants = await Restaurant.find();
+        const restaurants = await Restaurant.find({
+            location: {
+                $near: {
+                    $geometry: {
+                        type: "Point",
+                        coordinates: [userLongitude, userLatitude],
+                    },
+                    $maxDistance: 10000, // 10 km radius
+                },
+            },
+        });
+        console.log("Restaurants",restaurants)
         res.status(200).json(restaurants);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching restaurants', error });
@@ -81,7 +93,7 @@ const getNewUnapproved = async (req, res) => {
 // Get a single restaurant by ID
 const getRestaurantById = async (req, res) => {
     try {
-        const restaurant = await Restaurant.findOne({contact:req.params.id});
+        const restaurant = await Restaurant.findOne({ contact: req.params.id });
         if (!restaurant) {
             return res.status(404).json({ message: 'Restaurant not found' });
         }
@@ -96,7 +108,7 @@ const updateRestaurant = async (req, res) => {
     try {
         const updatedRestaurant = await Restaurant.findByIdAndUpdate(req.body._id, req.body, { new: true, runValidators: true });
 
-       console.log(updatedRestaurant)
+        console.log(updatedRestaurant)
 
         if (!updatedRestaurant) {
             return res.status(404).json({ message: 'Restaurant not found' });
