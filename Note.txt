@@ -64,6 +64,44 @@ Ambiguity: The route’s purpose may be less clear compared to field-specific ro
 
 ------------------------------------------------------------------------------------------------------------------------------------------------
 
+ReactNative natigation doesn't handle route props (generally all the props) synchronously  that's why
+
+const RestaurantDetails = ({ navigation, route }) => {
+
+    const { restaurant, distance, duration } = route?.params || {};
+
+    if (!restaurant) {
+        return (
+            <View className="flex-1 justify-center items-center">
+                <Text>Loading...</Text>
+            </View>
+        );
+    }
+.
+.
+.
+. continue defining other tasks.....
+}
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+ array.map(()=>   { } ) couldn't wait till asynchronous codes (found inside it) finish 
+ so you can use for of instead 
+
+ e.g    
+
+ for (const restaurant of restaurants) {
+          const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
+    
+          const response = await axios.get(requestUrl);
+          const distance = (response.data.routes[0].sections[0].summary.length/1000).toFixed(2)+' km';
+          const distanceValue = (response.data.routes[0].sections[0].summary.length/1000);
+          const duration = (response.data.routes[0].sections[0].summary.duration/60).toFixed(1) + 'min';
+    
+          unsorted.push({ restaurant, distance, duration,distanceValue });
+        }
+
+------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
