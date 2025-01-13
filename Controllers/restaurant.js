@@ -1,3 +1,4 @@
+const { default: axios } = require('axios');
 const Restaurant = require('../Models/Restaurant'); // Adjust the path to your Restaurant model
 const { io } = require('../socket/socket');
 const jwt = require('jsonwebtoken')
@@ -58,9 +59,20 @@ const createRestaurant = async (req, res) => {
     }
 };
 
-// Get all Near restaurants in 10km radius
+// Get all restaurants in 10km radius
 const getAllRestaurants = async (req, res) => {
-    const{userLongitude,userLatitude}=req.params
+    const { userLongitude, userLatitude } = req.params
+    try {
+        const restaurants = await Restaurant.find();
+        res.status(200).json(restaurants);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching restaurants', error });
+    }
+};
+
+// Get all Near restaurants in 10km radius
+const getAllNearRestaurants = async (req, res) => {
+    const { userLongitude, userLatitude } = req.params
     try {
         const restaurants = await Restaurant.find({
             location: {
@@ -73,10 +85,29 @@ const getAllRestaurants = async (req, res) => {
                 },
             },
         });
-        console.log("Restaurants",restaurants)
-        res.status(200).json(restaurants);
+
+
+        const unsorted = [];
+
+        for (const restaurant of restaurants) {
+          const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
+    
+          const response = await axios.get(requestUrl);
+          const distance = (response.data.routes[0].sections[0].summary.length/1000).toFixed(2)+' km';
+          const distanceValue = (response.data.routes[0].sections[0].summary.length/1000);
+          const duration = (response.data.routes[0].sections[0].summary.duration/60).toFixed(1) + 'min';
+    
+          unsorted.push({ restaurant, distance, duration,distanceValue });
+        }
+    
+
+        const sortedByDistance = unsorted.sort((a, b) => a.distanceValue - b.distanceValue);
+
+
+
+        res.status(200).json(sortedByDistance);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching restaurants', error });
+        res.status(500).json({ error: 'Error fetching restaurants', error });
     }
 };
 // Get all new unapproved restaurants
@@ -158,6 +189,7 @@ const login = async (req, res) => {
 module.exports = {
     createRestaurant,
     getAllRestaurants,
+    getAllNearRestaurants,
     getRestaurantById,
     updateRestaurant,
     deleteRestaurant,
