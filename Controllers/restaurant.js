@@ -2,7 +2,8 @@ const { default: axios } = require('axios');
 const Restaurant = require('../Models/Restaurant'); // Adjust the path to your Restaurant model
 const { io } = require('../socket/socket');
 const jwt = require('jsonwebtoken')
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const AppError = require('../GlobalErrors/AppError');
 function createToken(id) {
     return jwt.sign({ id }, process.env.JWT_SECRET_KEY, { expiresIn: process.env.JWT_EXPIRATION })
 }
@@ -86,20 +87,21 @@ const getAllNearRestaurants = async (req, res) => {
             },
         });
 
+        console.log((restaurants))
 
         const unsorted = [];
 
         for (const restaurant of restaurants) {
-          const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
-    
-          const response = await axios.get(requestUrl);
-          const distance = (response.data.routes[0].sections[0].summary.length/1000).toFixed(2)+' km';
-          const distanceValue = (response.data.routes[0].sections[0].summary.length/1000);
-          const duration = (response.data.routes[0].sections[0].summary.duration/60).toFixed(1) + 'min';
-    
-          unsorted.push({ restaurant, distance, duration,distanceValue });
+            const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
+
+            const response = await axios.get(requestUrl);
+            const distance = (response.data.routes[0].sections[0].summary.length / 1000).toFixed(2) + ' km';
+            const distanceValue = (response.data.routes[0].sections[0].summary.length / 1000);
+            const duration = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1) + 'min';
+
+            unsorted.push({ restaurant, distance, duration, distanceValue });
         }
-    
+
 
         const sortedByDistance = unsorted.sort((a, b) => a.distanceValue - b.distanceValue);
 
@@ -122,15 +124,17 @@ const getNewUnapproved = async (req, res) => {
 };
 
 // Get a single restaurant by ID
-const getRestaurantById = async (req, res) => {
+const getRestaurantById = async (req, res, next) => {
     try {
         const restaurant = await Restaurant.findOne({ contact: req.params.id });
         if (!restaurant) {
-            return res.status(404).json({ message: 'Restaurant not found' });
+
+            next(new AppError('Restaurant with this id is not found', 404));
         }
         res.status(200).json(restaurant);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching restaurant', error });
+
+        next(new AppError('Internal Problem', 500));
     }
 };
 

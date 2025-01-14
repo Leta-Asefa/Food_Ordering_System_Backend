@@ -26,87 +26,107 @@ function createToken(id) {
 }
 
 //------/all route is for testing purpose------
-const getAllUsers = async (req, res) => {
+const getAllUsers = async (req, res, next) => {
     try {
         const users = await User.find();
+        if (users.length === 0)
+            next(AppError("No users found, it is empty !", 400))
         res.json(users);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching users', error });
+        next(error)
     }
 };
 
 //------/get by employer------
-const getByEmployer = async (req, res) => {
+const getByEmployer = async (req, res, next) => {
+    const { employer } = req.params
     try {
-        const users = await User.find({ employer: req.params.employer, isActive: true }, 'username phoneNumber image');
-        if (!users)
-            res.json({ error: 'Users Not Found' })
+        if (!employer) {
+            return next(new AppError('Employer ID is required', 400));
+        }
+
+        const users = await User.find({ employer: employer, isActive: true }, 'username phoneNumber image');
+        if (!users || users.length === 0) {
+            return next(new AppError('No active users found for this employer', 404));
+        }
+
         res.json(users);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching users', error });
+        return next(error);  // Error will be handled by the global error handler
     }
 };
 
 
-const signup = async (req, res) => {
-    const { username, phoneNumber, password } = req.body
-    const data = { username, phoneNumber, password }
+const signup = async (req, res, next) => {
+    const { username, phoneNumber, password } = req.body;
+
+    if (!username || !phoneNumber || !password) {
+        return next(new AppError(`All these fields are required ( ${username ? "" : "username"}, ${phoneNumber ? "" : "PHone Number"} , ${password ? "" : "password"})`, 400));
+    }
 
     try {
-        const user = new User(data)
-        const createdUser = await user.save()
-        const token = createToken(createdUser._id)
+        const user = new User({ username, phoneNumber, password });
+        const createdUser = await user.save();
+        const token = createToken(createdUser._id);
 
-        res.cookie('jwt', token)
-        res.json({ username: createdUser.username, token })
-
+        res.cookie('jwt', token, { httpOnly: true, secure: true });
+        res.status(201).json({ username: createdUser.username, token });
 
     } catch (err) {
-        console.log(err)
-
-        res.json({ "error": handleErrors(err) })
+        return next(err);  // Error will be handled by the global error handler
     }
 }
 
-const login = async (req, res) => {
-    const { username, password } = req.body
+const login = async (req, res, next) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return next(new AppError('Username and password are required', 400));
+    }
+
     try {
+        const user = await User.login(username, password);
+        if (!user) {
+            return next(new AppError('Invalid username or password', 401));
+        }
 
-        const user = await User.login(username, password)
-        const token = createToken(user._id)
-
-        res.cookie('jwt', token)
-        res.json(user)
-
-
+        const token = createToken(user._id);
+        res.cookie('jwt', token, { httpOnly: true, secure: true });
+        res.json({ user, token });
 
     } catch (err) {
-        console.log("error *** " + err)
-        res.json({ 'error': err.message })
+        return next(err);  // Error will be handled by the global error handler
     }
 
 }
 
-const logout = (req, res) => {
+const logout = (req, res, next) => {
     res.cookie('jwt', '')
     res.json({ 'status': "logged out successfully !" })
 }
 
-const changePassword = async (req, res) => {
-    const { username, oldPassword, newPassword } = req.body
+const changePassword = async (req, res, next) => {
+    const { username, oldPassword, newPassword } = req.body;
+
+    if (!username || !oldPassword || !newPassword) {
+        return next(new AppError('Username, old password, and new password are required', 400));
+    }
 
     try {
+        const user = await User.login(username, oldPassword);
+        if (!user) {
+            return next(new AppError('Invalid old password', 401));
+        }
+        
+        user.password = newPassword;
+        await user.save();
 
-        const user = await User.login(username, oldPassword)
-        user.password = newPassword
-        await user.save()
-        const token = createToken(user._id)
-        res.cookie('jwt', token)
-        res.json({ 'old': oldPassword, "new": user.password, "firstName": user.firstName })
+        const token = createToken(user._id);
+        res.cookie('jwt', token, { httpOnly: true, secure: true });
+        res.json({ message: 'Password changed successfully' });
 
     } catch (err) {
-        console.log("error " + err)
-        res.status(400).json({ err: err.message })
+        return next(err);  // Error will be handled by the global error handler
     }
 
 }
