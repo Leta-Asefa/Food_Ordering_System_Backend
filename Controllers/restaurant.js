@@ -10,7 +10,6 @@ function createToken(id) {
 
 // Create a new restaurant
 const createRestaurant = async (req, res) => {
-    console.log('request recieved !')
     try {
         const newRestaurant = new Restaurant(req.body);
         await newRestaurant.save();
@@ -87,7 +86,6 @@ const getAllNearRestaurants = async (req, res) => {
             },
         });
 
-        console.log((restaurants))
 
         const unsorted = [];
 
@@ -97,7 +95,7 @@ const getAllNearRestaurants = async (req, res) => {
             const response = await axios.get(requestUrl);
             const distance = (response.data.routes[0].sections[0].summary.length / 1000).toFixed(2) + ' km';
             const distanceValue = (response.data.routes[0].sections[0].summary.length / 1000);
-            const duration = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1) + 'min';
+            const duration = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1) + ' min';
 
             unsorted.push({ restaurant, distance, duration, distanceValue });
         }
@@ -134,6 +132,20 @@ const getRestaurantById = async (req, res, next) => {
         res.status(200).json(restaurant);
     } catch (error) {
 
+        next(new AppError('Internal Problem', 500));
+    }
+};
+
+// Get a single restaurant by ID
+const getRestaurantPicturesById = async (req, res, next) => {
+    try {
+        const pictures = await Restaurant.findById( req.params.id ).select('pictures');
+        if (!pictures) {
+
+            next(new AppError('Restaurant with this id is not found', 404));
+        }
+        res.status(200).json(pictures);
+    } catch (error) {
         next(new AppError('Internal Problem', 500));
     }
 };
@@ -195,6 +207,7 @@ module.exports = {
     getAllRestaurants,
     getAllNearRestaurants,
     getRestaurantById,
+    getRestaurantPicturesById,
     updateRestaurant,
     deleteRestaurant,
     getNewUnapproved,

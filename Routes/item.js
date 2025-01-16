@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {createItem,getAllItems,getItemById,updateItemById,deleteItemById,getAllFood,getAllDrink,getAllCatering} = require('../Controllers/item');
+const {createItem,getAllItems,getItemById,updateItemById,deleteItemById,getAllFood,getAllDrink,getAllCatering, getMenuByRestaurantId} = require('../Controllers/item');
 
 // Create a new item
 router.post('/add',   createItem);
@@ -18,7 +18,7 @@ router.get('/drink',   getAllDrink);
 // Get all catering packages
 router.get('/catering',   getAllCatering);
 
-
+router.get('/:restaurantId/menu',   getMenuByRestaurantId);
 // Get an item by ID
 router.get('/:id',   getItemById);
 

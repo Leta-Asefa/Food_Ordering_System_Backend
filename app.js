@@ -6,14 +6,15 @@ require('dotenv').config();
 const cookieParser = require('cookie-parser')
 const { app, server } = require('./socket/socket.js');
 const mongoSanitize = require('express-mongo-sanitize');
+const chalk=require('chalk')
 
 const DBURL = 'mongodb://localhost:27017/DMS' // don't forget to add the hostname,port ... to .env 
 const PORT = process.env.PORT || 4000
 mongoose.connect(DBURL)
 const connection = mongoose.connection
-connection.on('open', () => console.log('Database Connection Established...'))
+connection.on('open', () => console.log(chalk.magenta.bold('Database Connection Established...')))
 
-server.listen(PORT, () => console.log('Server started on port ' + PORT))
+server.listen(PORT, () => console.log(chalk.magenta.bold('Server started on port ' + PORT)))
 
 app.use('/uploads', express.static(path.join(__dirname, 'UploadedFiles')));
 app.use(mongoSanitize());

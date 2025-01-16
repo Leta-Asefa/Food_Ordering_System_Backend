@@ -22,7 +22,7 @@ exports.getAllItems = async (req, res) => {
     }
 };
 
-// Get all food
+// Get all food  Consider fetching using restaurant id
 exports.getAllFood = async (req, res) => {
     try {
         const items = await Item.find({type:'Food'});
@@ -51,6 +51,22 @@ exports.getAllCatering = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// Get menu by RestaurantId
+exports.getMenuByRestaurantId = async (req, res) => {
+    
+    try {
+        const fasting = await Item.find({restaurantId:req.params.restaurantId,type:'Food',isFasting:true});
+        const nonfasting = await Item.find({restaurantId:req.params.restaurantId,type:'Food',isFasting:false});
+        const drink = await Item.find({restaurantId:req.params.restaurantId,type:'Drink'});
+        const catering = await Item.find({restaurantId:req.params.restaurantId,type:'Catering'});
+
+        res.status(200).json({fasting,nonfasting,drink,catering});
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 
 // Get an item by ID
 exports.getItemById = async (req, res) => {
