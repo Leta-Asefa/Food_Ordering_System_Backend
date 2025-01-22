@@ -148,7 +148,7 @@ const getPaymentsByDateRange = async (req, res) => {
 
 
 
-const getPaymentPage = async (req, res) => {
+const getPromotionPaymentPage = async (req, res) => {
   const { phoneNumber, amount, firstName, promotionId } = req.body
   const response = await generateTransactionReference(phoneNumber, amount, firstName, promotionId)
   if (response.status === 'success') {
@@ -158,6 +158,28 @@ const getPaymentPage = async (req, res) => {
   }
 
 };
+
+
+const getOrderPaymentPage = async (req, res) => {
+  const { phoneNumber, amount, firstName } = req.body
+  const tx_ref = await chapa.genTxRef();
+  const response = await chapa.initialize({
+    phone_number: phoneNumber,
+    first_name: firstName,
+    amount: amount,
+    currency: 'ETB',
+    tx_ref: tx_ref,
+    callback_url: 'http://localhost:3000/',
+
+  });
+  if (response.status === 'success') {
+    res.status(201).json({ checkout_url: response.data.checkout_url });
+  } else {
+    res.status(400).json({ error: "make sure that you entered all the required fields " });
+  }
+
+};
+
 
 
 
@@ -199,6 +221,7 @@ module.exports = {
   updatePaymentStatus,
   getAllPaymentsByRestaurant,
   getPaymentsByDateRange,
-  getPaymentPage,
-  verify
+  verify,
+  getOrderPaymentPage,
+  getPromotionPaymentPage
 };

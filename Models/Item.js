@@ -7,6 +7,11 @@ const itemSchema = new mongoose.Schema({
         ref: "Restaurant",
         required: true
     },
+    review:[ {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ItemRating",
+    }],
+
     name: {
         type: String,
         required: [true, 'Name is required']

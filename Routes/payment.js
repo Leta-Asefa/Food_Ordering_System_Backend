@@ -5,7 +5,7 @@ const {
   getAllPaymentsByUser,
   updatePaymentStatus,
   getAllPaymentsByRestaurant,
-  getPaymentsByDateRange,getPaymentPage,verify
+  getPaymentsByDateRange,getPromotionPaymentPage,getOrderPaymentPage
 } = require('../Controllers/payment');
 
 const router = express.Router();
@@ -28,7 +28,10 @@ router.get('/restaurant/:restaurantId', getAllPaymentsByRestaurant);
 // routes/paymentRoutes.js
 router.get('/restaurant/:restaurantId/:startDate/:endDate', getPaymentsByDateRange);
 
-router.post('/test', getPaymentPage);
+router.post('/test', getPromotionPaymentPage);
+
+
+router.post('/getOrderPaymentPage', getOrderPaymentPage);
 
 
 

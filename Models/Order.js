@@ -65,7 +65,7 @@ const orderSchema = new mongoose.Schema({
             type: Number,
             required: true
         },
-        longitude: {
+        longitude: {e
             type: Number,
             required: true
         }

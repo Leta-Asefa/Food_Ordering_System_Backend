@@ -56,8 +56,22 @@ exports.getAllCatering = async (req, res) => {
 exports.getMenuByRestaurantId = async (req, res) => {
     
     try {
-        const fasting = await Item.find({restaurantId:req.params.restaurantId,type:'Food',isFasting:true});
-        const nonfasting = await Item.find({restaurantId:req.params.restaurantId,type:'Food',isFasting:false});
+        const fasting = await Item.find({restaurantId:req.params.restaurantId,type:'Food',isFasting:true}).populate('review').populate({
+            path: 'review',
+            populate: {
+                path: 'user',
+                model: 'User', 
+                select:'username image'
+            },
+        });
+        const nonfasting = await Item.find({restaurantId:req.params.restaurantId,type:'Food',isFasting:false}).populate('review').populate({
+            path: 'review',
+            populate: {
+                path: 'user',
+                model: 'User', 
+                select:'username image'
+            },
+        });;
         const drink = await Item.find({restaurantId:req.params.restaurantId,type:'Drink'});
         const catering = await Item.find({restaurantId:req.params.restaurantId,type:'Catering'});
 
