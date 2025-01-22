@@ -6,8 +6,8 @@ const mongoose = require('mongoose');
 // Function to create a new order
 const createOrder = async (req, res) => {
     try {
-        const { userId, items, shippingAddress, paymentMethod } = req.body;
-
+        const { userId, items, shippingAddress, restaurantId } = req.body;
+        console.log("Res id", restaurantId)
         // Calculate total amount
         let totalAmount = 0;
         for (const item of items) {
@@ -18,12 +18,20 @@ const createOrder = async (req, res) => {
             totalAmount += itemDetails.price * item.quantity;
         }
 
+        console.log("Order to be saved : ", {
+            userId,
+            items,
+            totalAmount,
+            shippingAddress,
+            restaurantId
+        })
         const newOrder = new Order({
             userId,
             items,
             totalAmount,
             shippingAddress,
-            paymentMethod
+            restaurantId,
+            deliveryPersonId:userId // just for the time being , future change
         });
 
         await newOrder.save();
@@ -109,19 +117,19 @@ const getByStatus = async (req, res) => {
         const { status } = req.params
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
-        
+
         const endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
-        
+
         const orders = await Order.find({
             restaurantId: id,
             createdAt: { $gte: startOfDay, $lte: endOfDay }
         })
-        .populate('userId', 'name nationalId phoneNumber username')
-        .populate('items.item', 'name price')
-        .populate('deliveryPersonId', 'username phoneNumber image')
-        .populate('payment', 'status paymentDate amount paymentMethod');
-        
+            .populate('userId', 'name nationalId phoneNumber username')
+            .populate('items.item', 'name price')
+            .populate('deliveryPersonId', 'username phoneNumber image')
+            .populate('payment', 'status paymentDate amount paymentMethod');
+
 
         // Filter orders by status or payment status
         const filteredOrders = orders.filter(order =>

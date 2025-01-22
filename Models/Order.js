@@ -9,7 +9,8 @@ const orderSchema = new mongoose.Schema({
     deliveryPersonId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        default:"not set"
     },
     restaurantId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -45,7 +46,6 @@ const orderSchema = new mongoose.Schema({
     paymentMethod: {
         type: String,
         enum: ['Credit Card', 'PayPal', 'Cash on Delivery'],
-        required: true
     },
     shippingAddress: {
         address: {
@@ -65,7 +65,7 @@ const orderSchema = new mongoose.Schema({
             type: Number,
             required: true
         },
-        longitude: {e
+        longitude: {
             type: Number,
             required: true
         }
