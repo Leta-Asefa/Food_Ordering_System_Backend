@@ -7,7 +7,6 @@ const mongoose = require('mongoose');
 const createOrder = async (req, res) => {
     try {
         const { userId, items, shippingAddress, restaurantId } = req.body;
-        console.log("Res id", restaurantId)
         // Calculate total amount
         let totalAmount = 0;
         for (const item of items) {
@@ -18,13 +17,6 @@ const createOrder = async (req, res) => {
             totalAmount += itemDetails.price * item.quantity;
         }
 
-        console.log("Order to be saved : ", {
-            userId,
-            items,
-            totalAmount,
-            shippingAddress,
-            restaurantId
-        })
         const newOrder = new Order({
             userId,
             items,
@@ -34,12 +26,11 @@ const createOrder = async (req, res) => {
             deliveryPersonId:userId // just for the time being , future change
         });
 
-        await newOrder.save();
-
-        res.status(201).json({ message: 'Order created successfully', order: newOrder });
+        const savedOrder=await newOrder.save();
+        res.status(201).json({ message: 'Order created successfully !',orderId: savedOrder._id,orderStatus:savedOrder.status });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
@@ -78,6 +69,8 @@ const getRestaurantOrderById = async (req, res) => {
 
         const order = await Order.find({ restaurantId: id }).populate('userId', 'name nationalId phoneNumber username').populate('items.item', 'name price').populate('deliveryPersonId', 'username phoneNumber image').populate('payment', 'status paymentDate amount paymentMethod');
 
+        console.log(order)
+
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
@@ -96,7 +89,7 @@ const getUserOrderById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const order = await Order.find({ userId: id }).populate('userId', 'nationalId phoneNumber username').populate('items.item', 'name price').populate('restaurantId', 'name address').populate('deliveryPersonId', 'username phoneNumber');
+        const order = await Order.find({ userId: id }).populate('userId', 'nationalId phoneNumber username').populate('items.item', 'name price preparationTime').populate('restaurantId', 'name address').populate('deliveryPersonId', 'username phoneNumber');
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });

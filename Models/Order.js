@@ -54,12 +54,15 @@ const orderSchema = new mongoose.Schema({
         },
         city: {
             type: String,
+            default:'-'
         },
         postalCode: {
             type: String,
+            default:'-'
         },
         country: {
             type: String,
+            default:'-'
         },
         latitude: {
             type: Number,

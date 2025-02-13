@@ -49,7 +49,7 @@ const itemSchema = new mongoose.Schema({
         }
     },
     preparationTime: {
-        type: String,
+        type: Number,
     },
     allergensInformation: [
         {

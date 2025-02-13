@@ -110,6 +110,35 @@ const getAllNearRestaurants = async (req, res) => {
         res.status(500).json({ error: 'Error fetching restaurants', error });
     }
 };
+
+
+const getEstimatedTimeOfArrival = async (req, res) => {
+    const { userLongitude, userLatitude, restaurantId } = req.params
+    try {
+        const restaurant = await Restaurant.findById(restaurantId);
+
+
+        const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
+
+        console.log(requestUrl)
+
+        const response = await axios.get(requestUrl);
+        let eta = 0
+        response.data.routes[0].sections.forEach((section) => {
+            eta = eta + section.summary.duration
+        });
+
+
+        eta = (eta / 60).toFixed(1);
+
+        res.status(200).json({ durationValue: eta });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching restaurants', error });
+    }
+};
+
+
+
 // Get all new unapproved restaurants
 const getNewUnapproved = async (req, res) => {
     console.log('request recieved .../getNewUnapproved ')
@@ -139,7 +168,7 @@ const getRestaurantById = async (req, res, next) => {
 // Get a single restaurant by ID
 const getRestaurantPicturesById = async (req, res, next) => {
     try {
-        const pictures = await Restaurant.findById( req.params.id ).select('pictures');
+        const pictures = await Restaurant.findById(req.params.id).select('pictures');
         if (!pictures) {
 
             next(new AppError('Restaurant with this id is not found', 404));
@@ -211,5 +240,6 @@ module.exports = {
     updateRestaurant,
     deleteRestaurant,
     getNewUnapproved,
+    getEstimatedTimeOfArrival,
     login
 };

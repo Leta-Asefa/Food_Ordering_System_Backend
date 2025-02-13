@@ -1,6 +1,7 @@
 const express = require('express')
 const User = require('../Models/User')
 const jwt = require('jsonwebtoken')
+const AppError = require('../GlobalErrors/AppError');
 
 
 
