@@ -57,6 +57,14 @@ const userSchema = new mongoose.Schema({
     employer: {
         type: String
     },
+    vehicle: {
+        type: String,
+        required: true
+    },
+    rating: {
+        type: Number,
+        default: 0
+    },
     assignedOrders: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order'

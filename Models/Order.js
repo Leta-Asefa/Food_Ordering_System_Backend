@@ -34,6 +34,10 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    eta: {
+        type: Number,
+        required: true
+    },
     status: {
         type: String,
         enum: ['Pending', 'Processing', 'Ready For Pickup','Picked Up','OnTransit','Delivered','Cancelled'],

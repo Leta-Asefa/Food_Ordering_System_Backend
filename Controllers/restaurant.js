@@ -96,8 +96,9 @@ const getAllNearRestaurants = async (req, res) => {
             const distance = (response.data.routes[0].sections[0].summary.length / 1000).toFixed(2) + ' km';
             const distanceValue = (response.data.routes[0].sections[0].summary.length / 1000);
             const duration = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1) + ' min';
+            const durationValue = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1);
 
-            unsorted.push({ restaurant, distance, duration, distanceValue });
+            unsorted.push({ restaurant, distance, duration, distanceValue,durationValue });
         }
 
 
