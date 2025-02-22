@@ -1,4 +1,5 @@
 const Order = require('../Models/Order');
+const User = require('../Models/User');
 const Item = require('../Models/Item');
 const mongoose = require('mongoose');
 const { io } = require('../socket/socket');
@@ -239,6 +240,34 @@ const getOrderTrackingRoutes = async (req, res) => {
 }
 
 
+// Function to get current order of a delivery person
+const getDeliveryPersonOrder = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        console.log(userId)
+
+        const user = await User.findById(userId, '-_id assignedOrder');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const order = await Order.findById(user.assignedOrder,'-_id eta userId status shippingAddress')
+            .populate('userId', 'nationalId phoneNumber username')
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        res.status(200).json(order);
+
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Function to get Orders by status
 const getByStatus = async (req, res) => {
     try {
@@ -351,4 +380,17 @@ const deleteOrder = async (req, res) => {
     }
 };
 
-module.exports = { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById, getUserOrderById, updateDeliveryPerson, getByStatus, getOrderTrackingRoutes };
+
+module.exports = {
+    createOrder,
+    getOrderById,
+    getAllOrders,
+    updateOrderStatus,
+    deleteOrder,
+    getRestaurantOrderById,
+    getUserOrderById,
+    updateDeliveryPerson,
+    getByStatus,
+    getOrderTrackingRoutes,
+    getDeliveryPersonOrder
+};

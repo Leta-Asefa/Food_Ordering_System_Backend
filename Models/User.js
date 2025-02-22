@@ -65,24 +65,15 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    assignedOrders: [{
+    assignedOrder: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order'
-    }],
-    deliveryStatus: {
-        type: String,
-        enum: ['pending', 'in-progress', 'completed', 'failed', 'on-way', 'delayed', 'cancelled'],
-        default: 'pending'
     },
     location: {
         type: String // Track location in a city, coordinates can be added for more advanced tracking
     },
 
-    // Admin-specific fields
-    permissions: [{
-        type: String,
-        enum: ['manage_users', 'view_reports', 'manage_orders', 'manage_restaurants']
-    }]
+  
 });
 
 // Hash password before saving the user

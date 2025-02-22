@@ -1,5 +1,5 @@
 const express = require('express');
-const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById,updateDeliveryPerson,getByStatus, getOrderTrackingRoutes } = require('../Controllers/order');
+const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById,updateDeliveryPerson,getByStatus, getOrderTrackingRoutes, getDeliveryPersonOrder } = require('../Controllers/order');
 const router = express.Router();
 
 // Create a new order
@@ -16,6 +16,9 @@ router.get('/restaurant/:id', getRestaurantOrderById);
 
 // Get by User ID
 router.get('/user/:id', getUserOrderById);
+
+//get by delivery person id
+router.get('/deliveryperson/:userId', getDeliveryPersonOrder);
 
 //Get Map route for an order
 router.get('/maproute/:latitude/:longitude', getOrderTrackingRoutes);
