@@ -245,7 +245,7 @@ const getDeliveryPersonOrder = async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const user = await User.findById(userId, '-_id assignedOrder');
+        const user = await User.findById(userId, 'assignedOrder');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
