@@ -108,10 +108,13 @@ const logout = (req, res, next) => {
 
 const changePassword = async (req, res, next) => {
     const { username, oldPassword, newPassword } = req.body;
+    console.log("gotya !")
+    console.log(username,oldPassword,newPassword)
 
     if (!username || !oldPassword || !newPassword) {
         return next(new AppError('Username, old password, and new password are required', 400));
     }
+
 
     try {
         const user = await User.login(username, oldPassword);
@@ -122,8 +125,6 @@ const changePassword = async (req, res, next) => {
         user.password = newPassword;
         await user.save();
 
-        const token = createToken(user._id);
-        res.cookie('jwt', token, { httpOnly: true, secure: true });
         res.json({ message: 'Password changed successfully' });
 
     } catch (err) {
@@ -132,12 +133,44 @@ const changePassword = async (req, res, next) => {
 
 }
 
+
+const updateUser = async (req, res, next) => {
+    const { userId } = req.params; // Get user ID from URL
+    const { username, phoneNumber,vehicle, image,isActive } = req.body; // Allowed fields to update
+    if (!userId) {
+        return next(new AppError('User ID is required', 400));
+    }
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            return next(new AppError('User not found', 404));
+        }
+
+        // Update only provided fields
+        if (isActive !== undefined) user.isActive = isActive;
+        if (username) user.username = username;
+        if (phoneNumber) user.phoneNumber = phoneNumber;
+        if (vehicle) user.vehicle = vehicle;
+        if (image) user.image = image;
+
+        
+        res.json({ message: "User updated successfully" });
+
+    } catch (err) {
+        return next(err); // Handle error globally
+    }
+};
+
+
+
 module.exports = {
     getAllUsers,
     signup,
     login,
     logout,
     changePassword,
-    getByEmployer
+    getByEmployer,
+    updateUser
 
 };

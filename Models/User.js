@@ -33,10 +33,6 @@ const userSchema = new mongoose.Schema({
         enum: ['customer', 'delivery', 'admin', 'super_admin'],
         default: 'customer'
     },
-    isActive: {
-        type: Boolean,
-        default: true
-    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -56,6 +52,10 @@ const userSchema = new mongoose.Schema({
     // Delivery person-specific fields
     employer: {
         type: String
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     },
     vehicle: {
         type: String,

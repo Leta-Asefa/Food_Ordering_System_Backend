@@ -244,7 +244,6 @@ const getOrderTrackingRoutes = async (req, res) => {
 const getDeliveryPersonOrder = async (req, res) => {
     try {
         const { userId } = req.params;
-        console.log(userId)
 
         const user = await User.findById(userId, '-_id assignedOrder');
 
