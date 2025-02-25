@@ -388,7 +388,30 @@ const updateDeliveryPerson = async (req, res) => {
 // Function to update order status
 const sendOfferToDeliverPerson = async (req, res) => {
 
-   
+    try {
+        const { orderId, deliveryPersonId } = req.params;
+        const order = await Order.findById(orderId, 'shippingAddress restaurantId eta').populate("restaurantId", 'address')
+
+
+        const deliveryPersonSocketId = socket_users[deliveryPersonId]?.socketId
+
+        if (!deliveryPersonSocketId) {
+            res.json({ error: 'user is not connected to socket.io server' })
+            return
+        }
+
+        io.to(deliveryPersonSocketId).emit('offer', {
+            pickupLocation:order.restaurantId.address,
+            deliveryLocation:order.shippingAddress.address,
+            eta:order.eta
+        });
+
+        res.json({ message: "Notification is sent" })
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 
