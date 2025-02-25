@@ -2,7 +2,7 @@ const Order = require('../Models/Order');
 const User = require('../Models/User');
 const Item = require('../Models/Item');
 const mongoose = require('mongoose');
-const { io } = require('../socket/socket');
+const { io, socket_users } = require('../socket/socket');
 const { default: axios } = require('axios');
 
 
@@ -251,7 +251,7 @@ const getDeliveryPersonOrder = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const order = await Order.findById(user.assignedOrder,'-_id eta userId status shippingAddress')
+        const order = await Order.findById(user.assignedOrder, 'eta userId status shippingAddress')
             .populate('userId', 'nationalId phoneNumber username')
 
         if (!order) {
@@ -259,6 +259,29 @@ const getDeliveryPersonOrder = async (req, res) => {
         }
 
         res.status(200).json(order);
+
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
+// Function to get delivery history  of a delivery person
+const getDeliveryHistory = async (req, res) => {
+    try {
+        const { deliveryPersonId } = req.params;
+
+        const orders = await Order.find({ deliveryPersonId: deliveryPersonId }, 'eta userId status shippingAddress')
+            .populate('userId', 'nationalId phoneNumber username');
+
+        if (!orders) {
+            return res.status(200).json({ message: 'No delivery history' });
+        }
+
+
+        res.status(200).json(orders);
 
 
     } catch (error) {
@@ -361,6 +384,49 @@ const updateDeliveryPerson = async (req, res) => {
     }
 };
 
+
+// Function to update order status
+const sendOfferToDeliverPerson = async (req, res) => {
+
+   
+};
+
+
+// Function to verify order 
+const verifyOrder = async (req, res) => {
+
+    try {
+        const { deliveryPersonId, scannedValue } = req.params;
+
+
+        const user = await User.findById(deliveryPersonId, 'assignedOrder');
+
+        if (!user || !user.assignedOrder) {
+            return res.status(400).json({ message: "User does not have an assigned order" });
+        }
+
+
+        if (user.assignedOrder.toString() === scannedValue.trim()) {
+
+            const order = await Order.findById(user.assignedOrder)
+            console.log("Order ", order)
+            order.status = 'Delivered'
+            user.assignedOrder = null
+            await user.save()
+            await order.save()
+            res.status(200).json({ verified: true });
+        }
+        else
+            res.status(200).json({ message: 'Order Id is not correct' });
+
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
 // Function to delete an order
 const deleteOrder = async (req, res) => {
     try {
@@ -391,5 +457,8 @@ module.exports = {
     updateDeliveryPerson,
     getByStatus,
     getOrderTrackingRoutes,
-    getDeliveryPersonOrder
+    getDeliveryPersonOrder,
+    verifyOrder,
+    getDeliveryHistory,
+    sendOfferToDeliverPerson
 };

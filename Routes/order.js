@@ -1,5 +1,5 @@
 const express = require('express');
-const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById,updateDeliveryPerson,getByStatus, getOrderTrackingRoutes, getDeliveryPersonOrder } = require('../Controllers/order');
+const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById,updateDeliveryPerson,getByStatus, getOrderTrackingRoutes, getDeliveryPersonOrder, verifyOrder, getDeliveryHistory, sendOfferToDeliverPerson } = require('../Controllers/order');
 const router = express.Router();
 
 // Create a new order
@@ -20,6 +20,9 @@ router.get('/user/:id', getUserOrderById);
 //get by delivery person id
 router.get('/deliveryperson/:userId', getDeliveryPersonOrder);
 
+//get delivery history
+router.get('/deliveryhistory/:deliveryPersonId', getDeliveryHistory);
+
 //Get Map route for an order
 router.get('/maproute/:latitude/:longitude', getOrderTrackingRoutes);
 
@@ -33,6 +36,10 @@ router.put('/:id/status', updateOrderStatus);
 // Update delivery person
 router.put('/:id/deliveryperson', updateDeliveryPerson);
 
+//send delivery offer
+router.get('/:orderId/deliveryoffer/:deliveryPersonId', sendOfferToDeliverPerson);
+
+router.get('/verify/:scannedValue/:deliveryPersonId', verifyOrder);
 
 
 // Delete an order
