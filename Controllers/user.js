@@ -154,6 +154,7 @@ const updateUser = async (req, res, next) => {
         if (vehicle) user.vehicle = vehicle;
         if (image) user.image = image;
 
+        await user.save()
         
         res.json({ message: "User updated successfully" });
 

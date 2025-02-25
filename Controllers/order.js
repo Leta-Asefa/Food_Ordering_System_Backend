@@ -251,8 +251,12 @@ const getDeliveryPersonOrder = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        console.log(user)
+
         const order = await Order.findById(user.assignedOrder, 'eta userId status shippingAddress')
             .populate('userId', 'nationalId phoneNumber username')
+
+        console.log(order)
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
@@ -367,16 +371,49 @@ const updateOrderStatus = async (req, res) => {
 const updateDeliveryPerson = async (req, res) => {
 
     try {
-        const { id } = req.params;
+        const { orderId } = req.params;
         const { deliveryPersonId } = req.body;
 
-        const order = await Order.findById(id);
+        const order = await Order.findById(orderId, 'eta userId status shippingAddress deliveryPersonId')
+            .populate('userId', 'nationalId phoneNumber username')
+
+        const user = await User.findById(deliveryPersonId)
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
+        if (!user) {
+            return res.status(404).json({ message: 'User (delivery person) not found' });
+        }
+
         order.deliveryPersonId = deliveryPersonId;
         await order.save();
+        user.assignedOrder = order._id
+        user.isActive=false
+        await user.save()
+
+
+        const deliveryPersonSocketId = socket_users[deliveryPersonId]?.socketId
+
+        if (!deliveryPersonSocketId) {
+            res.json({ error: 'user is not connected to socket.io server' })
+            return
+        }
+
+
+
+        io.to(deliveryPersonSocketId).emit('currentOrder', {
+            order
+        });
+        
+        io.to(deliveryPersonSocketId).emit('updateAvailablity', {
+            status:false
+        });
+
+
+
+
+
         res.status(200).json({ message: 'Order status updated successfully' });
     } catch (error) {
         console.error(error);
@@ -401,9 +438,10 @@ const sendOfferToDeliverPerson = async (req, res) => {
         }
 
         io.to(deliveryPersonSocketId).emit('offer', {
-            pickupLocation:order.restaurantId.address,
-            deliveryLocation:order.shippingAddress.address,
-            eta:order.eta
+            orderId: order._id,
+            pickupLocation: order.restaurantId.address,
+            deliveryLocation: order.shippingAddress.address,
+            eta: order.eta
         });
 
         res.json({ message: "Notification is sent" })

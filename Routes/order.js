@@ -18,7 +18,7 @@ router.get('/restaurant/:id', getRestaurantOrderById);
 router.get('/user/:id', getUserOrderById);
 
 //get by delivery person id
-router.get('/deliveryperson/:userId', getDeliveryPersonOrder);
+router.get('/assignedorder/:userId', getDeliveryPersonOrder);
 
 //get delivery history
 router.get('/deliveryhistory/:deliveryPersonId', getDeliveryHistory);
@@ -34,7 +34,7 @@ router.get('/restaurant/:id/status/:status', getByStatus);
 router.put('/:id/status', updateOrderStatus);
 
 // Update delivery person
-router.put('/:id/deliveryperson', updateDeliveryPerson);
+router.put('/:orderId/deliveryperson', updateDeliveryPerson);
 
 //send delivery offer
 router.get('/:orderId/deliveryoffer/:deliveryPersonId', sendOfferToDeliverPerson);
