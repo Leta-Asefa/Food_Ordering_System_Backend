@@ -44,6 +44,10 @@ app.use('/promotion', promotionRouter)
 const restaurantRatingRouter = require('./Routes/restaurantRating.js')
 app.use('/restaurant_rating', restaurantRatingRouter)
 
+const deliveryPersonRating = require('./Routes/deliveryPersonRating.js')
+app.use('/delivery_person_rating', deliveryPersonRating)
+
+
 const itemRatingRouter = require('./Routes/itemRating.js')
 app.use('/item_rating', itemRatingRouter)
 
