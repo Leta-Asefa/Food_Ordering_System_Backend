@@ -1,5 +1,5 @@
 const express = require('express');
-const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById,updateDeliveryPerson,getByStatus, getOrderTrackingRoutes, getDeliveryPersonOrder, verifyOrder, getDeliveryHistory, sendOfferToDeliverPerson } = require('../Controllers/order');
+const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById,updateDeliveryPerson,getByStatus, getOrderTrackingRoutes, getDeliveryPersonOrder, verifyOrder, getDeliveryHistory, sendOfferToDeliverPerson, offerNotAccepted } = require('../Controllers/order');
 const router = express.Router();
 
 // Create a new order
@@ -38,6 +38,9 @@ router.put('/:orderId/deliveryperson', updateDeliveryPerson);
 
 //send delivery offer
 router.get('/:orderId/deliveryoffer/:deliveryPersonId', sendOfferToDeliverPerson);
+
+//send order not accepted event to the restaurant admin
+router.get('/:orderId/deliveryoffer/:restaurantId', offerNotAccepted);
 
 router.get('/verify/:scannedValue/:deliveryPersonId', verifyOrder);
 

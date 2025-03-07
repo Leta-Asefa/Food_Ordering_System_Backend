@@ -220,7 +220,6 @@ const login = async (req, res) => {
 
 
         res.cookie('jwt', token)
-        console.log('Logged in successfully', token)
         res.json({ restaurant, token })
 
 

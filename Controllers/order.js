@@ -32,7 +32,6 @@ const createOrder = async (req, res) => {
 
         const savedOrder = await newOrder.save();
         const new_order_history = await getNewOrderHistory(userId)
-        console.log(new_order_history)
         io.to('customers').emit('order_history_updated', new_order_history)
 
         res.status(201).json({ message: 'Order created successfully !', orderId: savedOrder._id, orderStatus: savedOrder.status, totalAmount: savedOrder.totalAmount, eta: savedOrder.eta });
@@ -149,7 +148,6 @@ const getRestaurantOrderById = async (req, res) => {
 
         const order = await Order.find({ restaurantId: id }).populate('userId', 'name nationalId phoneNumber username').populate('items.item', 'name price').populate('deliveryPersonId', 'username phoneNumber image').populate('payment', 'status paymentDate amount paymentMethod');
 
-        console.log(order)
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
@@ -251,12 +249,10 @@ const getDeliveryPersonOrder = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        console.log(user)
 
         const order = await Order.findById(user.assignedOrder, 'eta userId status shippingAddress')
             .populate('userId', 'nationalId phoneNumber username')
 
-        console.log(order)
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
@@ -372,7 +368,7 @@ const updateDeliveryPerson = async (req, res) => {
 
     try {
         const { orderId } = req.params;
-        const { deliveryPersonId } = req.body;
+        const { deliveryPersonId, restaurantId } = req.body;
 
         const order = await Order.findById(orderId, 'eta userId status shippingAddress deliveryPersonId')
             .populate('userId', 'nationalId phoneNumber username')
@@ -389,11 +385,12 @@ const updateDeliveryPerson = async (req, res) => {
         order.deliveryPersonId = deliveryPersonId;
         await order.save();
         user.assignedOrder = order._id
-        user.isActive=false
+        user.isActive = false
         await user.save()
 
 
         const deliveryPersonSocketId = socket_users[deliveryPersonId]?.socketId
+        const restaurantSocketId = socket_users[restaurantId]?.socketId
 
         if (!deliveryPersonSocketId) {
             res.json({ error: 'user is not connected to socket.io server' })
@@ -405,11 +402,20 @@ const updateDeliveryPerson = async (req, res) => {
         io.to(deliveryPersonSocketId).emit('currentOrder', {
             order
         });
-        
+
         io.to(deliveryPersonSocketId).emit('updateAvailablity', {
-            status:false
+            status: false
         });
 
+        io.to(restaurantSocketId).emit('offerAccepted', {
+            orderId,
+            deliveryPersonId: {
+                username: user.username,
+                phoneNumber: user.phoneNumber,
+                image: user.image,
+                _id: user._id
+            }
+        })
 
 
 
@@ -421,10 +427,38 @@ const updateDeliveryPerson = async (req, res) => {
     }
 };
 
+// Function to update order status
+const offerNotAccepted = async (req, res) => {
+
+    try {
+        const { orderId } = req.params;
+        const { restaurantId } = req.body;
+
+        const restaurantSocketId = socket_users[restaurantId]?.socketId
+
+        if (!restaurantSocketId) {
+            res.json({ error: 'user is not connected to socket.io server' })
+            return
+        }
+
+        io.to(restaurantSocketId).emit('offerNotAccepted', {
+            orderId,
+            deliveryPersonId: undefined
+        })
+
+        res.status(200).json({ message: 'Delivery perosn did not accepted your offer, Please assign another one ! ' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
 
 // Function to update order status
 const sendOfferToDeliverPerson = async (req, res) => {
 
+    console.log("offer sent !")
     try {
         const { orderId, deliveryPersonId } = req.params;
         const order = await Order.findById(orderId, 'shippingAddress restaurantId eta').populate("restaurantId", 'address')
@@ -521,5 +555,6 @@ module.exports = {
     getDeliveryPersonOrder,
     verifyOrder,
     getDeliveryHistory,
-    sendOfferToDeliverPerson
+    sendOfferToDeliverPerson,
+    offerNotAccepted
 };

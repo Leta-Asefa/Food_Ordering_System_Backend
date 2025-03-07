@@ -45,13 +45,23 @@ const getByEmployer = async (req, res, next) => {
         if (!employer) {
             return next(new AppError('Employer ID is required', 400));
         }
-
-        const users = await User.find({ employer: employer, isActive: true }, 'username phoneNumber image');
-        if (!users || users.length === 0) {
-            return next(new AppError('No active users found for this employer', 404));
+        if (employer === 'us') {
+            const users = await User.find({ employer: employer, isActive: true }, 'username phoneNumber image');
+            if (!users || users.length === 0) {
+                return next(new AppError('No active users found for this employer', 404));
+            }
+            res.json(users);
+        }
+        else {
+            const users = await User.find({ employer: employer, isActive: true }, 'username phoneNumber image');
+            if (!users || users.length === 0) {
+                return next(new AppError('No active users found for this employer', 404));
+            }
+            res.json(users);
         }
 
-        res.json(users);
+
+
     } catch (error) {
         return next(error);  // Error will be handled by the global error handler
     }
@@ -109,7 +119,7 @@ const logout = (req, res, next) => {
 const changePassword = async (req, res, next) => {
     const { username, oldPassword, newPassword } = req.body;
     console.log("gotya !")
-    console.log(username,oldPassword,newPassword)
+    console.log(username, oldPassword, newPassword)
 
     if (!username || !oldPassword || !newPassword) {
         return next(new AppError('Username, old password, and new password are required', 400));
@@ -121,7 +131,7 @@ const changePassword = async (req, res, next) => {
         if (!user) {
             return next(new AppError('Invalid old password', 401));
         }
-        
+
         user.password = newPassword;
         await user.save();
 
@@ -136,7 +146,7 @@ const changePassword = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
     const { userId } = req.params; // Get user ID from URL
-    const { username, phoneNumber,vehicle, image,isActive } = req.body; // Allowed fields to update
+    const { username, phoneNumber, vehicle, image, isActive } = req.body; // Allowed fields to update
     if (!userId) {
         return next(new AppError('User ID is required', 400));
     }
@@ -155,7 +165,7 @@ const updateUser = async (req, res, next) => {
         if (image) user.image = image;
 
         await user.save()
-        
+
         res.json({ message: "User updated successfully" });
 
     } catch (err) {
