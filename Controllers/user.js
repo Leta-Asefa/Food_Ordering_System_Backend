@@ -2,6 +2,7 @@ const express = require('express')
 const User = require('../Models/User')
 const jwt = require('jsonwebtoken')
 const AppError = require('../GlobalErrors/AppError');
+const { io, socket_users } = require('../socket/socket');
 
 
 
@@ -101,6 +102,12 @@ const login = async (req, res, next) => {
             return next(new AppError('Invalid username or password', 401));
         }
 
+        if (!user.isActive) {
+            user.isActive = true
+            await user.save()
+            console.log("switched on ...")
+        }
+
         const token = createToken(user._id);
         res.cookie('jwt', token, { httpOnly: true, secure: true });
         res.json({ user, token });
@@ -157,16 +164,27 @@ const updateUser = async (req, res, next) => {
             return next(new AppError('User not found', 404));
         }
 
+        console.log(userId, user)
+
         // Update only provided fields
-        if (isActive !== undefined) user.isActive = isActive;
-        if (username) user.username = username;
+        if (isActive !== undefined) {
+            user.isActive = isActive;
+            user.markModified('isActive'); // 🔥 Force Mongoose to detect change
+        } if (username) user.username = username;
         if (phoneNumber) user.phoneNumber = phoneNumber;
         if (vehicle) user.vehicle = vehicle;
         if (image) user.image = image;
 
+        await user.validate(); // 🔍 Ensure the model passes validation
+        console.log('Validation passed');
+
+
         await user.save()
 
-        res.json({ message: "User updated successfully" });
+
+        console.log(user)
+
+        res.json({ message: "User updated successfully", isActive: user.isActive });
 
     } catch (err) {
         return next(err); // Handle error globally
