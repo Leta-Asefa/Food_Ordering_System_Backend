@@ -1,4 +1,5 @@
 const express = require('express')
+const redis = require("redis");
 const mongoose = require('mongoose')
 const cors = require('cors')
 const path = require('path')
@@ -6,13 +7,20 @@ require('dotenv').config();
 const cookieParser = require('cookie-parser')
 const { app, server } = require('./socket/socket.js');
 const mongoSanitize = require('express-mongo-sanitize');
-const chalk=require('chalk')
+const chalk = require('chalk')
 
 const DBURL = 'mongodb://localhost:27017/DMS' // don't forget to add the hostname,port ... to .env 
 const PORT = process.env.PORT || 4000
 mongoose.connect(DBURL)
 const connection = mongoose.connection
 connection.on('open', () => console.log(chalk.magenta.bold('Database Connection Established...')))
+
+const redisClient = redis.createClient();
+redisClient.connect()
+  .then(() => console.log(chalk.magenta.bold('Connected To Redis !')))
+  .catch(err => console.error("Redis Connection Error:", err));
+module.exports.redisClient = redisClient;
+
 
 server.listen(PORT, () => console.log(chalk.magenta.bold('Server started on port ' + PORT)))
 
@@ -21,7 +29,7 @@ app.use(mongoSanitize());
 app.use(express.json({ limit: '500mb' }));
 app.use(cookieParser())
 app.use(cors({
-  origin: ['http://localhost:3000','http://localhost:3001','http://localhost:8081'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8081'],
   credentials: true // Allow credentials (cookies) to be sent
 }));
 
@@ -57,16 +65,28 @@ app.use('/order', orderRouter)
 const paymentRouter = require('./Routes/payment.js')
 app.use('/payment', paymentRouter)
 
-const {activatePromotion}=require('./Controllers/promotion.js')
-app.use('/webhook/chapa',activatePromotion)
+const { activatePromotion } = require('./Controllers/promotion.js')
+app.use('/webhook/chapa', activatePromotion)
 
 const resadminRouter = require('./Routes/resadmin.js');
 app.use('/resadmin', resadminRouter)
+
+const gpsRouter = require('./Routes/gps.js');
+app.use('/gps', gpsRouter)
+
+
+
+
+
 
 const AppError = require('./GlobalErrors/AppError.js');
 app.use((req, res, next) => {
   next(new AppError('Route not found', 404));
 });
+
+
+
+
 
 // Global error handler
 const globalErrorHandler = require('./GlobalErrors/ErrorHandler.js');
