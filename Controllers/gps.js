@@ -2,7 +2,7 @@ const { default: axios } = require('axios');
 const { redisClient } = require('../app')
 
 const updateLocation = async (req, res) => {
-    const { userId, latitude, longitude, username, phoneNumber, image,employer } = req.body;
+    const { userId, latitude, longitude, username, phoneNumber, image, employer } = req.body;
 
     if (!userId || typeof latitude === 'undefined' || typeof longitude === 'undefined') {
         return res.status(400).json({ message: "Missing parameters" });
@@ -98,6 +98,7 @@ const getAllLocations = async (req, res) => {
 
 
 const getNearbyDeliveryPeople = async (req, res) => {
+    
     try {
         const { latitude, longitude } = req.params; // Use query params instead of params
 
@@ -139,10 +140,16 @@ const getNearbyDeliveryPeople = async (req, res) => {
         // Fetch distance from HERE Maps API
         const distancePromises = deliveryPeople.map(async (driver) => {
             try {
-                const userInfo = await redisClient.sendCommand([
+                const userInfoArray = await redisClient.sendCommand([
                     "HGETALL",
                     `delivery_person_info:${driver.userId}`
                 ]);
+
+                const userInfo = {};
+                for (let i = 0; i < userInfoArray.length; i += 2) {
+                    userInfo[userInfoArray[i]] = userInfoArray[i + 1];
+                }
+
 
                 const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${latitude},${longitude}&destination=${driver.latitude},${driver.longitude}&transportMode=car&return=summary`;
 
@@ -156,13 +163,13 @@ const getNearbyDeliveryPeople = async (req, res) => {
                     distanceValue: Number((summary.length / 1000).toFixed(2)),
                     duration: (summary.duration / 60).toFixed(1) + " min",
                     durationValue: Number((summary.duration / 60).toFixed(2)),
-                    username:userInfo[7],
-                    phoneNumber:userInfo[3],
-                    image:userInfo[1],
-                    employer:userInfo[5]
+                    username: userInfo.username,
+                    phoneNumber: userInfo.phoneNumber,
+                    image: userInfo.image,
+                    employer: userInfo.employer
                 };
             } catch (error) {
-                console.error("HERE API error:", error);
+                // console.error("HERE API error:", error);
                 return { ...driver, distance: "N/A", duration: "N/A", distanceValue: Infinity };
             }
         });
