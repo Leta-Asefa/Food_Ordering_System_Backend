@@ -37,10 +37,10 @@ router.put('/:id/status', updateOrderStatus);
 router.put('/:orderId/deliveryperson', updateDeliveryPerson);
 
 //send delivery offer
-router.get('/:orderId/deliveryoffer/:deliveryPersonId', sendOfferToDeliverPerson);
+router.get('/:orderId/deliveryoffer/:deliveryPersonId/:restaurantId', sendOfferToDeliverPerson);
 
 //send order not accepted event to the restaurant admin
-router.get('/:orderId/deliveryoffer/:restaurantId', offerNotAccepted);
+router.post('/:orderId/deliveryoffer/:restaurantId', offerNotAccepted);
 
 router.get('/verify/:scannedValue/:deliveryPersonId', verifyOrder);
 

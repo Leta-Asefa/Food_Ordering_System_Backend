@@ -1,7 +1,9 @@
 const express = require('express')
 const { Server } = require('socket.io')
 const User = require('../Models/User');
-const http = require('http')
+const http = require('http');
+const { redisClient } = require('../redis/redis');
+
 
 const app = express()
 const server = http.createServer(app)
@@ -34,6 +36,19 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', async () => {
         const userId = Object.keys(socket_users).find(key => socket_users[key].socketId === socket.id);
         if (!userId) return;
+
+       await redisClient.sendCommand([
+            "ZREM",
+            "delivery_locations", // Key of the sorted set
+            `delivery_person:${userId}` // Member to remove
+        ]);
+
+       await redisClient.sendCommand([
+            "DEL",
+            `delivery_person_info:${userId}` // Key of the hash
+        ]);
+        
+       
 
         try {
             const user = await User.findById(userId);

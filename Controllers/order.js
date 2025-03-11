@@ -374,6 +374,7 @@ const updateDeliveryPerson = async (req, res) => {
             .populate('userId', 'nationalId phoneNumber username')
 
         const user = await User.findById(deliveryPersonId)
+
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
@@ -399,13 +400,16 @@ const updateDeliveryPerson = async (req, res) => {
 
 
 
+        if (!restaurantSocketId) {
+            res.json({ error: 'user is not connected to socket.io server' })
+            return
+        }
+
+
         io.to(deliveryPersonSocketId).emit('currentOrder', {
             order
         });
 
-        io.to(deliveryPersonSocketId).emit('updateAvailablity', {
-            status: false
-        });
 
         io.to(restaurantSocketId).emit('offerAccepted', {
             orderId,
@@ -434,6 +438,10 @@ const offerNotAccepted = async (req, res) => {
         const { orderId } = req.params;
         const { restaurantId } = req.body;
 
+        const order = await Order.findById(orderId)
+        order.deliveryPersonId = null
+        order.save()
+
         const restaurantSocketId = socket_users[restaurantId]?.socketId
 
         if (!restaurantSocketId) {
@@ -443,7 +451,7 @@ const offerNotAccepted = async (req, res) => {
 
         io.to(restaurantSocketId).emit('offerNotAccepted', {
             orderId,
-            deliveryPersonId: undefined
+            deliveryPersonId: null
         })
 
         res.status(200).json({ message: 'Delivery perosn did not accepted your offer, Please assign another one ! ' });
@@ -458,21 +466,28 @@ const offerNotAccepted = async (req, res) => {
 // Function to update order status
 const sendOfferToDeliverPerson = async (req, res) => {
 
-    console.log("offer sent !")
     try {
-        const { orderId, deliveryPersonId } = req.params;
+        const { orderId, deliveryPersonId, restaurantId } = req.params;
         const order = await Order.findById(orderId, 'shippingAddress restaurantId eta').populate("restaurantId", 'address')
 
 
         const deliveryPersonSocketId = socket_users[deliveryPersonId]?.socketId
+        const restaurantSocketId = socket_users[restaurantId]?.socketId
 
         if (!deliveryPersonSocketId) {
+
+            io.to(restaurantSocketId).emit('offerNotAccepted', {
+                orderId,
+                deliveryPersonId: null
+            })
+
             res.json({ error: 'user is not connected to socket.io server' })
             return
         }
 
         io.to(deliveryPersonSocketId).emit('offer', {
             orderId: order._id,
+            restaurantId: order.restaurantId._id,
             pickupLocation: order.restaurantId.address,
             deliveryLocation: order.shippingAddress.address,
             eta: order.eta

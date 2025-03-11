@@ -1,6 +1,6 @@
 const express = require('express')
-const redis = require("redis");
 const mongoose = require('mongoose')
+const { redisClient } = require('./redis/redis.js') //for the sake of initialization
 const cors = require('cors')
 const path = require('path')
 require('dotenv').config();
@@ -14,12 +14,6 @@ const PORT = process.env.PORT || 4000
 mongoose.connect(DBURL)
 const connection = mongoose.connection
 connection.on('open', () => console.log(chalk.magenta.bold('Database Connection Established...')))
-
-const redisClient = redis.createClient();
-redisClient.connect()
-  .then(() => console.log(chalk.magenta.bold('Connected To Redis !')))
-  .catch(err => console.error("Redis Connection Error:", err));
-module.exports.redisClient = redisClient;
 
 
 server.listen(PORT, () => console.log(chalk.magenta.bold('Server started on port ' + PORT)))

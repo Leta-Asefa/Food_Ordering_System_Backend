@@ -1,5 +1,5 @@
 const { default: axios } = require('axios');
-const { redisClient } = require('../app')
+const { redisClient } = require('../redis/redis');
 
 const updateLocation = async (req, res) => {
     const { userId, latitude, longitude, username, phoneNumber, image, employer } = req.body;
@@ -27,16 +27,8 @@ const updateLocation = async (req, res) => {
         ]);
 
 
-        await redisClient.sendCommand([
-            "GEOADD",
-            "delivery_locations",
-            lon.toString(),
-            lat.toString(),
-            `delivery_person:86345`
-        ]);
 
-
-        await redisClient.sendCommand([
+       const response2= await redisClient.sendCommand([
             "HSET",
             `delivery_person_info:${userId}`,
             "username", username,
@@ -45,16 +37,9 @@ const updateLocation = async (req, res) => {
             "employer", employer
         ]);
 
-        await redisClient.sendCommand([
-            "HSET",
-            `delivery_person_info:86345`,
-            "username", "Kebede",
-            "phoneNumber", "09873343532",
-            "image", image,
-            "employer", 'us'
-        ]);
-
-
+     
+        console.log("removed from redis ",response,response2)
+       
         res.json({ message: "Location updated successfully" });
     } catch (error) {
         console.error("Error updating location:", error);
@@ -98,7 +83,7 @@ const getAllLocations = async (req, res) => {
 
 
 const getNearbyDeliveryPeople = async (req, res) => {
-    
+
     try {
         const { latitude, longitude } = req.params; // Use query params instead of params
 

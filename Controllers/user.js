@@ -164,25 +164,19 @@ const updateUser = async (req, res, next) => {
             return next(new AppError('User not found', 404));
         }
 
-        console.log(userId, user)
 
         // Update only provided fields
-        if (isActive !== undefined) {
-            user.isActive = isActive;
-            user.markModified('isActive'); // 🔥 Force Mongoose to detect change
-        } if (username) user.username = username;
+        if (isActive !== undefined) user.isActive = isActive;
+        if (username) user.username = username;
         if (phoneNumber) user.phoneNumber = phoneNumber;
         if (vehicle) user.vehicle = vehicle;
         if (image) user.image = image;
 
-        await user.validate(); // 🔍 Ensure the model passes validation
-        console.log('Validation passed');
 
 
         await user.save()
 
 
-        console.log(user)
 
         res.json({ message: "User updated successfully", isActive: user.isActive });
 
