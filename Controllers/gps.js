@@ -2,11 +2,13 @@ const { default: axios } = require('axios');
 const { redisClient } = require('../redis/redis');
 
 const updateLocation = async (req, res) => {
-    const { userId, latitude, longitude, username, phoneNumber, image, employer } = req.body;
+    const { userId, latitude, longitude, username, phoneNumber, image, employer, rating } = req.body;
 
     if (!userId || typeof latitude === 'undefined' || typeof longitude === 'undefined') {
         return res.status(400).json({ message: "Missing parameters" });
     }
+
+    console.log("Rating ", rating, userId)
 
     try {
         // Ensure latitude and longitude are numbers
@@ -28,18 +30,21 @@ const updateLocation = async (req, res) => {
 
 
 
-       const response2= await redisClient.sendCommand([
+        const response2 = await redisClient.sendCommand([
             "HSET",
             `delivery_person_info:${userId}`,
             "username", username,
             "phoneNumber", phoneNumber,
             "image", image,
-            "employer", employer
+            "employer", employer,
+            "rating", rating.toString(),
         ]);
 
-     
-        console.log("removed from redis ",response,response2)
-       
+        console.log(response2)
+
+
+        console.log("removed from redis ", response, response2)
+
         res.json({ message: "Location updated successfully" });
     } catch (error) {
         console.error("Error updating location:", error);
@@ -81,7 +86,6 @@ const getAllLocations = async (req, res) => {
 };
 
 
-
 const getNearbyDeliveryPeople = async (req, res) => {
 
     try {
@@ -98,23 +102,31 @@ const getNearbyDeliveryPeople = async (req, res) => {
             return res.status(400).json({ message: "Invalid latitude or longitude" });
         }
 
-        // Fetch nearby delivery people within 5 km using correct GEOSEARCH syntax
-        const nearbyDrivers = await redisClient.sendCommand([
-            "GEOSEARCH",
-            "delivery_locations",
-            "FROMLONLAT",  // Corrected syntax: "FROMLONLAT" instead of "FROMCOORD"
-            lon.toString(),
-            lat.toString(),
-            "BYRADIUS",
-            "5", "km",
-            "ASC",  // Sort results by nearest first
-            "WITHCOORD"
-        ]);
+        let radius = 5;
+        const maxRadius = 20;
+        const increment = 3;
+        let nearbyDrivers = [];
 
-        if (!nearbyDrivers || nearbyDrivers.length === 0) {
-            return res.json({ message: "No nearby delivery people found" });
+        while (radius <= maxRadius) {
+            nearbyDrivers = await redisClient.sendCommand([
+                "GEOSEARCH",
+                "delivery_locations",
+                "FROMLONLAT",
+                lon.toString(),
+                lat.toString(),
+                "BYRADIUS",
+                `${radius}`, "km",
+                "ASC",
+                "WITHCOORD"
+            ]);
+
+            if (nearbyDrivers && nearbyDrivers.length > 0) {
+                break; // Stop searching when nearby drivers are found
+            }
+
+            console.log("Expanding search radius to", radius + increment);
+            radius += increment;
         }
-
         // Transform response
         const deliveryPeople = nearbyDrivers.map(driver => ({
             userId: driver[0].replace("delivery_person:", ""),
@@ -151,7 +163,8 @@ const getNearbyDeliveryPeople = async (req, res) => {
                     username: userInfo.username,
                     phoneNumber: userInfo.phoneNumber,
                     image: userInfo.image,
-                    employer: userInfo.employer
+                    employer: userInfo.employer,
+                    rating: userInfo.rating
                 };
             } catch (error) {
                 // console.error("HERE API error:", error);
@@ -161,6 +174,7 @@ const getNearbyDeliveryPeople = async (req, res) => {
 
         // Wait for all API requests to finish
         const driversWithDistances = await Promise.all(distancePromises);
+        console.log(driversWithDistances)
 
         // Sort by actual route distance
         const sortedDrivers = driversWithDistances.sort((a, b) => a.distanceValue - b.distanceValue);
