@@ -1,6 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const { redisClient } = require('./redis/redis.js') //for the sake of initialization
+const { chapa } = require('./Chapa/chapa.js') //for the sake of initialization
 const cors = require('cors')
 const path = require('path')
 require('dotenv').config();

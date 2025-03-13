@@ -1,9 +1,7 @@
 const Payment = require('../Models/Payment');
 const Promotion = require('../Models/Promotion')
-const { Chapa } = require('chapa-nodejs');
-const chapa = new Chapa({
-  secretKey: "CHASECK_TEST-yupCbRiOJ1FcfUGReVpFioCC3YZiLYXp"
-});
+const { chapa } = require('../Chapa/chapa');
+
 
 
 // Create a new payment
@@ -161,7 +159,7 @@ const getPromotionPaymentPage = async (req, res) => {
 
 
 const getOrderPaymentPage = async (req, res) => {
-  const { phoneNumber, amount, firstName } = req.body
+  const { phoneNumber, amount, firstName,subAccountId } = req.body
   const tx_ref = await chapa.genTxRef();
   const response = await chapa.initialize({
     phone_number: phoneNumber,
@@ -170,8 +168,12 @@ const getOrderPaymentPage = async (req, res) => {
     currency: 'ETB',
     tx_ref: tx_ref,
     callback_url: 'http://localhost:3000/',
+    split: {
+      subaccounts: [{ id: subAccountId }]
+    }
 
   });
+  console.log(response)
   if (response.status === 'success') {
     res.status(201).json({ checkout_url: response.data.checkout_url });
   } else {
@@ -194,7 +196,7 @@ const generateTransactionReference = async (phoneNumber, amount, firstName, prom
     callback_url: 'http://localhost:3000/',
 
   });
-  
+
   if (response.status === 'success') {
     const promotion = await Promotion.findById(promotionId)
     promotion.tx_ref = tx_ref

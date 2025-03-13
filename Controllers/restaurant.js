@@ -4,6 +4,10 @@ const { io } = require('../socket/socket');
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose');
 const AppError = require('../GlobalErrors/AppError');
+const { chapa } = require('../Chapa/chapa');
+
+
+
 function createToken(id) {
     return jwt.sign({ id }, process.env.JWT_SECRET_KEY, { expiresIn: process.env.JWT_EXPIRATION })
 }
@@ -98,7 +102,7 @@ const getAllNearRestaurants = async (req, res) => {
             const duration = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1) + ' min';
             const durationValue = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1);
 
-            unsorted.push({ restaurant, distance, duration, distanceValue,durationValue });
+            unsorted.push({ restaurant, distance, duration, distanceValue, durationValue });
         }
 
 
@@ -197,6 +201,79 @@ const updateRestaurant = async (req, res) => {
     }
 };
 
+
+// Update a restaurant bank info
+const updateRestaurantBankInformation = async (req, res) => {
+    const { id } = req.params
+    const { bankName, bankAccountName, bankAccountNumber } = req.body
+    const bankCode = await getBankIdByName(bankName)
+    let subAccountId = null
+    try {
+
+        const subAccountData = {
+            business_name: bankAccountName,
+            account_name: bankAccountName,
+            bank_code: bankCode, // Replace with the actual bank code
+            account_number: bankAccountNumber,
+            split_type: "percentage", // or "flat"
+            split_value: 0.02, // 10% if split_type is percentage
+        };
+
+        try {
+            const response = await axios.post('https://api.chapa.co/v1/subaccount', subAccountData, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.CHAPA_SECRET_KEY}`
+                }
+            });
+            console.log(response)
+
+            subAccountId = response.data.data.subaccount_id
+
+        } catch (error) {
+            console.log("Error while creating subaccount ", error.response?.data); // Log error response from chapa
+            res.json({ error: "Account is not added , please try again a few minutes later !" });
+            return
+        }
+
+        const restaurant = await Restaurant.findOne({ contact: id })
+        restaurant.bankName = bankName
+        restaurant.bankAccountName = bankAccountName
+        restaurant.bankAccountNumber = bankAccountNumber
+        restaurant.subAccountId = subAccountId
+        await restaurant.save()
+        res.status(200).json({ message: "Bank info updated successfully !" });
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Error updating restaurant', error });
+    }
+};
+
+const getBankIdByName = async (bankName) => {
+    try {
+        const response = await axios.get("https://api.chapa.co/v1/banks", {
+            headers: {
+                Authorization: `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+                "Content-Type": "application/json",
+            },
+        });
+
+        const banks = response.data.data; // Assuming the bank list is under `data`
+        const bank = banks.find(b => b.name.toLowerCase() === bankName.toLowerCase());
+
+        if (!bank) {
+            throw new Error("Bank not found");
+        }
+
+        return bank.id; // Bank ID needed for sub-account creation
+    } catch (error) {
+        console.error("Error fetching banks:", error.response ? error.response.data : error.message);
+        throw error;
+    }
+};
+
 // Delete a restaurant by ID
 const deleteRestaurant = async (req, res) => {
     try {
@@ -238,6 +315,7 @@ module.exports = {
     getRestaurantById,
     getRestaurantPicturesById,
     updateRestaurant,
+    updateRestaurantBankInformation,
     deleteRestaurant,
     getNewUnapproved,
     getEstimatedTimeOfArrival,

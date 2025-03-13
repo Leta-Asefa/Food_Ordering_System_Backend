@@ -59,7 +59,20 @@ const restaurantSchema = new mongoose.Schema({
         type: String,
         required: [true,'Password can not be empty'],
         minlength: [8,'Password should be at least 8 charcters']
-    }
+    },
+    bankName:{
+        type:String
+    },
+    bankAccountNumber:{
+        type:String,
+    },
+    bankAccountName:{
+        type:String
+    },
+    subAccountId:{
+        type:String
+    },
+
 });
 
 // Create a 2dsphere index on the location field
