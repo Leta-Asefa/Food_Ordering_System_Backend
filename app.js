@@ -60,8 +60,6 @@ app.use('/order', orderRouter)
 const paymentRouter = require('./Routes/payment.js')
 app.use('/payment', paymentRouter)
 
-const { activatePromotion } = require('./Controllers/promotion.js')
-app.use('/webhook/chapa', activatePromotion)
 
 const resadminRouter = require('./Routes/resadmin.js');
 app.use('/resadmin', resadminRouter)
@@ -70,6 +68,8 @@ const gpsRouter = require('./Routes/gps.js');
 app.use('/gps', gpsRouter)
 
 
+const { chapaWebhook } = require('./Controllers/payment.js')
+app.use('/webhook/chapa', chapaWebhook)
 
 
 

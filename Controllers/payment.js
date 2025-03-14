@@ -1,6 +1,10 @@
 const Payment = require('../Models/Payment');
 const Promotion = require('../Models/Promotion')
 const { chapa } = require('../Chapa/chapa');
+const Order = require('../Models/Order');
+const { activatePromotion } = require('./promotion');
+const { socket_users, io } = require('../socket/socket');
+const crypto = require('crypto')
 
 
 
@@ -159,23 +163,43 @@ const getPromotionPaymentPage = async (req, res) => {
 
 
 const getOrderPaymentPage = async (req, res) => {
-  const { phoneNumber, amount, firstName,subAccountId } = req.body
-  const tx_ref = await chapa.genTxRef();
-  const response = await chapa.initialize({
-    phone_number: phoneNumber,
-    first_name: firstName,
-    amount: amount,
-    currency: 'ETB',
-    tx_ref: tx_ref,
-    callback_url: 'http://localhost:3000/',
-    split: {
-      subaccounts: [{ id: subAccountId }]
+  const { phoneNumber, amount, firstName, subAccountId, orderId, userId } = req.body
+
+  console.log(orderId, userId)
+  const order = await Order.findById(orderId)
+  if (!order) return res.json({ error: 'No order is found !' })
+
+  if (!order.checkout_url) {
+
+
+    const tx_ref = await chapa.genTxRef();
+    const response = await chapa.initialize({
+      phone_number: phoneNumber,
+      first_name: firstName,
+      amount: amount,
+      currency: 'ETB',
+      tx_ref: tx_ref,
+      callback_url: 'http://localhost:3000/',
+      split: {
+        subaccounts: [{ id: subAccountId }]
+      },
+      meta: {
+        type: "order",
+        orderId,
+        userId
+      }
+
+    });
+
+    if (response.status === 'success') {
+      order.checkout_url = response.data.checkout_url
+      await order.save()
+      res.status(201).json({ checkout_url: response.data.checkout_url });
+    }
+    else {
+      res.status(201).json({ checkout_url: order.checkout_url });
     }
 
-  });
-  console.log(response)
-  if (response.status === 'success') {
-    res.status(201).json({ checkout_url: response.data.checkout_url });
   } else {
     res.status(400).json({ error: "make sure that you entered all the required fields " });
   }
@@ -214,6 +238,39 @@ const verify = async (tx_ref) => {
 
 }
 
+const chapaWebhook = async (req, res) => {
+  
+  console.log("Web hook is called")
+  const {orderId,userId,type}=req.body.meta
+
+  const hash = crypto.createHmac('sha256', process.env.CHAPA_WEBHOOK_SECRET_KEY).update(JSON.stringify(req.body)).digest('hex');
+  
+  if (hash == req.headers['x-chapa-signature']) { // we know it is from the right source
+    
+    if (type === 'order' && req.body.status === 'success') {
+      if(order.status==='Processing') return // as chapa my send the same webhook request multiple times
+      const order = await Order.findById(orderId)
+      order.tx_ref = req.body.tx_ref
+      order.status = 'Processing'
+      await order.save()
+
+      const userSocketId = socket_users[userId]?.socketId
+      if (userSocketId)
+        io.to(userSocketId).emit('order_status_update', { message: "Dear Customer, Your order "+orderId+ " is being processed. It will be on transit soon. Thank you for your patience !" })
+      console.log("io sent")
+      return
+    }
+    else {
+      activatePromotion(req, res)
+      return
+    }
+
+
+  }
+
+
+};
+
 
 
 module.exports = {
@@ -225,5 +282,6 @@ module.exports = {
   getPaymentsByDateRange,
   verify,
   getOrderPaymentPage,
-  getPromotionPaymentPage
+  getPromotionPaymentPage,
+  chapaWebhook
 };

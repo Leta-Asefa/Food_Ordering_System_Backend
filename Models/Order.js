@@ -75,6 +75,12 @@ const orderSchema = new mongoose.Schema({
             required: true
         }
     },
+    tx_ref:{
+        type:String
+    },
+    checkout_url:{
+        type: String
+    },
     createdAt: {
         type: Date,
         default: Date.now

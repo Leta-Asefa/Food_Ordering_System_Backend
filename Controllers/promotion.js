@@ -1,7 +1,6 @@
 const Promotion = require('../Models/Promotion');
 const Restaurant = require('../Models/Restaurant');
 const crypto = require('crypto')
-const { verify } = require('./payment')
 
 /**
  * Add a new promotion while ensuring no conflicts exist.
@@ -137,10 +136,12 @@ exports.activatePromotion = async (req, res) => {
 
         if (hash == req.headers['x-chapa-signature']) {
 
-            const promotion = await Promotion.findOne({ tx_ref: req.body.tx_ref })
-            promotion.status = 'active'
-            promotion.expiresAt = undefined;
-            await promotion.save()
+            if (req.body.status === 'success') {
+                const promotion = await Promotion.findOne({ tx_ref: req.body.tx_ref })
+                promotion.status = 'active'
+                promotion.expiresAt = undefined;
+                await promotion.save()
+            }
 
         }
 
