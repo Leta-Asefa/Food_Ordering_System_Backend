@@ -248,8 +248,8 @@ const chapaWebhook = async (req, res) => {
   if (hash == req.headers['x-chapa-signature']) { // we know it is from the right source
     
     if (type === 'order' && req.body.status === 'success') {
-      if(order.status==='Processing') return // as chapa my send the same webhook request multiple times
       const order = await Order.findById(orderId)
+      if(order.status==='Processing') return // as chapa my send the same webhook request multiple times
       order.tx_ref = req.body.tx_ref
       order.status = 'Processing'
       await order.save()

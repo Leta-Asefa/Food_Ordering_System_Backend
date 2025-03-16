@@ -167,7 +167,7 @@ const getUserOrderById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const orders = await Order.find({ userId: id }).populate('userId', 'nationalId phoneNumber username').populate('items.item', 'name price preparationTime').populate('restaurantId', 'name address location').populate('deliveryPersonId', 'username phoneNumber image rating vehicle');
+        const orders = await Order.find({ userId: id }).populate('userId', 'nationalId phoneNumber username').populate('items.item', 'name price preparationTime').populate('restaurantId', 'name address location subAccountId').populate('deliveryPersonId', 'username phoneNumber image rating vehicle');
 
         if (!orders) {
             return res.status(404).json({ message: 'Order not found' });
