@@ -5,24 +5,6 @@ const AppError = require('../GlobalErrors/AppError');
 const { io, socket_users } = require('../socket/socket');
 
 
-
-function handleErrors(err) {
-
-    let errors = { username: '', password: '', role: '' }
-    if (err.code == 11000) {
-        errors.username = 'This username is already registered'
-        return errors
-    }
-    if (err.message.includes('User validation failed')) {
-        Object.values(err.errors).forEach(({ properties }) => {
-            errors[properties.path] = properties.message
-        })
-    }
-
-    return errors
-
-}
-
 function createToken(id) {
     return jwt.sign({ id }, process.env.JWT_SECRET_KEY, { expiresIn: process.env.JWT_EXPIRATION })
 }
@@ -153,7 +135,7 @@ const changePassword = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
     const { userId } = req.params; // Get user ID from URL
-    const { username, phoneNumber, vehicle, image, isActive } = req.body; // Allowed fields to update
+    const { username, phoneNumber, vehicle, image, isActive,commonDeliveryLocations } = req.body; // Allowed fields to update
     if (!userId) {
         return next(new AppError('User ID is required', 400));
     }
@@ -171,10 +153,14 @@ const updateUser = async (req, res, next) => {
         if (phoneNumber) user.phoneNumber = phoneNumber;
         if (vehicle) user.vehicle = vehicle;
         if (image) user.image = image;
+        if(commonDeliveryLocations)  user.commonDeliveryLocations=commonDeliveryLocations
+
 
 
 
         await user.save()
+
+        console.log(user);
 
 
 

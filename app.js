@@ -2,6 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const { redisClient } = require('./redis/redis.js') //for the sake of initialization
 const { chapa } = require('./Chapa/chapa.js') //for the sake of initialization
+const { messaging } = require("./Firebase/firebase_config.js");//for the sake of initialization 
 const cors = require('cors')
 const path = require('path')
 require('dotenv').config();
@@ -14,10 +15,10 @@ const DBURL = 'mongodb://localhost:27017/DMS' // don't forget to add the hostnam
 const PORT = process.env.PORT || 4000
 mongoose.connect(DBURL)
 const connection = mongoose.connection
-connection.on('open', () => console.log(chalk.magenta.bold('Database Connection Established...')))
+connection.on('open', () => console.log(chalk.magenta.bold('✅ Database Connection Established...')))
 
 
-server.listen(PORT, () => console.log(chalk.magenta.bold('Server started on port ' + PORT)))
+server.listen(PORT, () => console.log(chalk.magenta.bold('✅ Server started on port ' + PORT)))
 
 app.use('/uploads', express.static(path.join(__dirname, 'UploadedFiles')));
 app.use(mongoSanitize());
@@ -27,6 +28,7 @@ app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8081'],
   credentials: true // Allow credentials (cookies) to be sent
 }));
+
 
 
 const userRouter = require('./Routes/user.js')
@@ -66,6 +68,9 @@ app.use('/resadmin', resadminRouter)
 
 const gpsRouter = require('./Routes/gps.js');
 app.use('/gps', gpsRouter)
+
+const fcmRouter = require('./Routes/fcm.js');
+app.use('/fcm', fcmRouter)
 
 
 const { chapaWebhook } = require('./Controllers/payment.js')
