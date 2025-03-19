@@ -186,18 +186,40 @@ const getRestaurantPicturesById = async (req, res, next) => {
 
 // Update a restaurant by ID
 const updateRestaurant = async (req, res) => {
+    const { location, name, address, isApproved, licenseImage,password,cuisine,image,opened,priceRange,pictures,_id } = req.body; // Allowed fields to update
+    if (!_id) {
+        return next(new AppError('User ID is required', 400));
+    }
+
     try {
-        const updatedRestaurant = await Restaurant.findByIdAndUpdate(req.body._id, req.body, { new: true, runValidators: true });
-
-        console.log(updatedRestaurant)
-
-        if (!updatedRestaurant) {
-            return res.status(404).json({ message: 'Restaurant not found' });
+        const restaurant = await Restaurant.findById(_id);
+        if (!restaurant) {
+            return next(new AppError('User not found', 404));
         }
-        res.status(200).json(updatedRestaurant);
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: 'Error updating restaurant', error });
+
+
+        // Update only provided fields
+        if (location !== undefined) restaurant.location = location;
+        if (name) restaurant.name = name;
+        if (address) restaurant.address = address;
+        if (licenseImage) restaurant.licenseImage = licenseImage;
+        if (image) restaurant.image = image;
+        if(priceRange)  restaurant.priceRange=priceRange
+        if(pictures)  restaurant.pictures=pictures
+
+
+
+
+        await restaurant.save()
+
+        console.log("Restaurant ",restaurant);
+
+
+
+        res.json({ message: "Restaurant updated successfully" });
+
+    } catch (err) {
+        return next(err); // Handle error globally
     }
 };
 

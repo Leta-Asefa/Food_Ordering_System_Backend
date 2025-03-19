@@ -5,7 +5,6 @@ const saveFcmToken = async (req, res) => {
     const { userId, fcmToken } = req.body;
     if (!userId || !fcmToken) return;
     
-    console.log("fcm called !", fcmToken);
 
     try {
         await redisClient.set(`fcm_token:${userId}`, fcmToken, "EX", 60 * 60 * 24 * 7); // Expires in 7 days

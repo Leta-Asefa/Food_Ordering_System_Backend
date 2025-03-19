@@ -50,6 +50,7 @@ const restaurantSchema = new mongoose.Schema({
         type: String,  // Store the path to the image as a string
         required: [true,'License Image can not be empty']
     },
+    pictures:[{type:String}],
     status: {
         type: String,
         enum: ['New', 'Deliquent', 'Terminated','Normal'],
