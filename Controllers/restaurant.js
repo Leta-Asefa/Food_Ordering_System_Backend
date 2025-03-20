@@ -1,5 +1,6 @@
 const { default: axios } = require('axios');
 const Restaurant = require('../Models/Restaurant'); // Adjust the path to your Restaurant model
+const Order = require("../Models/Order");
 const { io } = require('../socket/socket');
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose');
@@ -115,6 +116,60 @@ const getAllNearRestaurants = async (req, res) => {
         res.status(500).json({ error: 'Error fetching restaurants', error });
     }
 };
+
+
+const getAllPopularRestaurants = async (req, res) => {
+
+    const { userLongitude, userLatitude } = req.params
+    console.log("User location ", userLongitude, userLatitude)
+    try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // Step 1: Find the top 15 restaurants with the most orders in the last 7 days
+        const topRestaurants = await Order.aggregate([
+            { $match: { createdAt: { $gte: sevenDaysAgo } } }, // Filter last 7 days
+            { $group: { _id: "$restaurantId", orderCount: { $sum: 1 } } }, // Count orders per restaurant
+            { $sort: { orderCount: -1 } }, // Sort by order count (descending)
+            { $limit: 15 } // Get top 15 restaurants
+        ]);
+
+        // Extract restaurant IDs
+        const restaurantIds = topRestaurants.map(r => r._id);
+        
+        // Step 2: Fetch restaurant details sorted by rating
+        const restaurants = await Restaurant.find({ _id: { $in: restaurantIds } })
+            .sort({ rating: -1 }) // Sort by highest rating
+            .lean(); // Optimize query by returning plain JavaScript objects
+
+
+
+            const unsorted = []; //unsorted by distance rather by rating
+
+            for (const restaurant of restaurants) {
+                
+                const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
+                
+                console.log("Top ",restaurant,requestUrl)
+                const response = await axios.get(requestUrl);
+                console.log(response)
+                const distance = (response.data.routes[0].sections[0].summary.length / 1000).toFixed(2) + ' km';
+                const distanceValue = (response.data.routes[0].sections[0].summary.length / 1000);
+                const duration = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1) + ' min';
+                const durationValue = (response.data.routes[0].sections[0].summary.duration / 60).toFixed(1);
+    
+                unsorted.push({ restaurant, distance, duration, distanceValue, durationValue });
+            }
+
+
+
+        res.status(200).json(unsorted);
+    } catch (error) {
+        console.error("Error fetching popular restaurants:", error);
+        res.status(500).json({ message: 'Error fetching popular restaurants', error });
+    }
+};
+
 
 
 const getEstimatedTimeOfArrival = async (req, res) => {
@@ -334,6 +389,7 @@ module.exports = {
     createRestaurant,
     getAllRestaurants,
     getAllNearRestaurants,
+    getAllPopularRestaurants,
     getRestaurantById,
     getRestaurantPicturesById,
     updateRestaurant,
