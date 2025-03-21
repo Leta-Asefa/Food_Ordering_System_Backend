@@ -16,11 +16,13 @@ const io = new Server(server, {
 })
 
 const socket_users = {}
-
+// Initialize Socket.IO connection for real-time user role management
 io.on('connection', async (socket) => {
     const role = socket.handshake.query.role;
     const userId = socket.handshake.query.userId;
     socket_users[userId] = { socketId: socket.id };
+
+    
 
     if (role === 'super_admin') {
         socket.join('super_admin');
@@ -29,9 +31,11 @@ io.on('connection', async (socket) => {
     } else if (role === 'delivery_person') {
         socket.join('delivery_person');
         console.log("User joined delivery_person room!");
+
     } else if (role === 'customers') {
         socket.join('customers');
     }
+
 
     socket.on('disconnect', async () => {
         const userId = Object.keys(socket_users).find(key => socket_users[key].socketId === socket.id);
