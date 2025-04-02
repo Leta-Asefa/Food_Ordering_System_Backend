@@ -79,6 +79,10 @@ const restaurantSchema = new mongoose.Schema({
 // Create a 2dsphere index on the location field
 restaurantSchema.index({ location: '2dsphere' });
 
+// Add a text index to search across multiple fields
+restaurantSchema.index({ name: "text", location: "text", address: "text", rating: "text",cuisine:"text" });
+
+
 // Hash password before saving the user
 restaurantSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {

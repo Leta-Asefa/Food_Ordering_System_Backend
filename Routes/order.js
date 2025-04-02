@@ -1,5 +1,5 @@
 const express = require('express');
-const { createOrder, getOrderById, getAllOrders, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById,updateDeliveryPerson,getByStatus, getOrderTrackingRoutes, getDeliveryPersonOrder, verifyOrder, getDeliveryHistory, sendOfferToDeliverPerson, offerNotAccepted } = require('../Controllers/order');
+const { createOrder, getOrderById, getAllOrders,getOptimizedRoute, updateOrderStatus, deleteOrder, getRestaurantOrderById,getUserOrderById,updateDeliveryPerson,getByStatus, getOrderTrackingRoutes, getDeliveryPersonOrder, verifyOrder, getDeliveryHistory, sendOfferToDeliverPerson, offerNotAccepted } = require('../Controllers/order');
 const router = express.Router();
 
 // Create a new order
@@ -28,6 +28,9 @@ router.get('/maproute/:latitude/:longitude', getOrderTrackingRoutes);
 
 // Get by either order status or payment status
 router.get('/restaurant/:id/status/:status', getByStatus);
+
+// Get by either order status or payment status
+router.get('/optimizedroute/:id', getOptimizedRoute);
 
 
 // Update order status

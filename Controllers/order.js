@@ -7,7 +7,6 @@ const { default: axios } = require("axios");
 const { getFcmToken } = require("../Firebase/fmc_token_service");
 const { messaging } = require("../Firebase/firebase_config");
 
-
 // Function to create a new order
 const createOrder = async (req, res) => {
   try {
@@ -37,15 +36,15 @@ const createOrder = async (req, res) => {
     const savedOrder = await newOrder.save();
     const new_order_history = await getNewOrderHistory(userId);
     io.to("customers").emit("order_history_updated", new_order_history);
-    
-    const token=await getFcmToken(userId)
+
+    const token = await getFcmToken(userId);
     const message = {
       token, // User's FCM token
       notification: {
-        title:"Notificatoin Title",
-        body:"The body will go here.....",
-        image:"https://static.vecteezy.com/system/resources/previews/019/796/973/non_2x/motorbike-delivery-man-logo-icon-symbol-template-free-vector.jpg"
- 
+        title: "Notificatoin Title",
+        body: "The body will go here.....",
+        image:
+          "https://static.vecteezy.com/system/resources/previews/019/796/973/non_2x/motorbike-delivery-man-logo-icon-symbol-template-free-vector.jpg",
       },
       data: {
         customData: "custom data value",
@@ -53,15 +52,13 @@ const createOrder = async (req, res) => {
     };
 
     messaging.send(message);
-    res
-      .status(201)
-      .json({
-        message: "Order created successfully !",
-        orderId: savedOrder._id,
-        orderStatus: savedOrder.status,
-        totalAmount: savedOrder.totalAmount,
-        eta: savedOrder.eta,
-      });
+    res.status(201).json({
+      message: "Order created successfully !",
+      orderId: savedOrder._id,
+      orderStatus: savedOrder.status,
+      totalAmount: savedOrder.totalAmount,
+      eta: savedOrder.eta,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
@@ -254,11 +251,31 @@ const getUserOrderById = async (req, res) => {
 const getOrderTrackingRoutes = async (req, res) => {
   const { userLatitude, userLongitude, restaurantLocation } = req.params;
   try {
-    const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurantLocation.coordinates[1]},${restaurantLocation.coordinates[0]}&transportMode=pedestrian&return=summary`;
+    // const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurantLocation.coordinates[1]},${restaurantLocation.coordinates[0]}&transportMode=pedestrian&return=summary`;
 
-    const response = await axios.get(requestUrl);
+    // const response = await axios.get(requestUrl);
 
-    res.json({ mapRoute: response.data });
+    console.log("Request received for optimized route !");
+
+    res.json({
+      routeCoordinates: [
+        { latitude: 9.187595, longitude: 38.763946 }, // Start
+        { latitude: 9.1868, longitude: 38.7645 },
+        { latitude: 9.1859, longitude: 38.765 },
+        { latitude: 9.185, longitude: 38.7657 }, // Turn right
+        { latitude: 9.1845, longitude: 38.7649 },
+        { latitude: 9.1839, longitude: 38.7643 }, // Turn left
+        { latitude: 9.183, longitude: 38.7638 },
+        { latitude: 9.1822, longitude: 38.7636 }, // Slight right
+        { latitude: 9.1814, longitude: 38.7535 },
+        { latitude: 9.1808, longitude: 38.7544 }, // Turn left
+        { latitude: 9.1802, longitude: 38.7655 },
+        { latitude: 9.1795, longitude: 38.7657 }, // Turn right
+        { latitude: 9.1788, longitude: 38.7662 },
+        { latitude: 9.1782, longitude: 38.7667 },
+        { latitude: 9.1776, longitude: 38.7643 }, // Destination
+      ],
+    });
   } catch (error) {
     console.log(error);
   }
@@ -471,12 +488,10 @@ const offerNotAccepted = async (req, res) => {
       deliveryPersonId: null,
     });
 
-    res
-      .status(200)
-      .json({
-        message:
-          "Delivery perosn did not accepted your offer, Please assign another one ! ",
-      });
+    res.status(200).json({
+      message:
+        "Delivery perosn did not accepted your offer, Please assign another one ! ",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -549,6 +564,37 @@ const verifyOrder = async (req, res) => {
 };
 
 // Function to delete an order
+const getOptimizedRoute = async (req, res) => {
+  try {
+    console.log("Optimized Route Request Accepted !");
+    res.json({
+      routeCoordinates: [
+        { latitude: 9.187595, longitude: 38.763946 }, // Start
+        { latitude: 9.1868, longitude: 38.7645 },
+        { latitude: 9.1859, longitude: 38.765 },
+        { latitude: 9.185, longitude: 38.7657 }, // Turn right
+        { latitude: 9.1845, longitude: 38.7649 },
+        { latitude: 9.1839, longitude: 38.7643 }, // Turn left
+        { latitude: 9.183, longitude: 38.7633 },
+        { latitude: 9.1822, longitude: 38.7546 }, // Slight right
+        { latitude: 9.1814, longitude: 38.7535 },
+        { latitude: 9.1808, longitude: 38.7544 }, // Turn left
+        { latitude: 9.1802, longitude: 38.7657 },
+        { latitude: 9.1795, longitude: 38.7657 }, // Turn right
+        { latitude: 9.1788, longitude: 38.7542 },
+        { latitude: 9.1782, longitude: 38.7665 },
+        { latitude: 9.1776, longitude: 38.7643 }, // Destination
+      ],
+      userLocation: {latitude: 9.187595, longitude: 38.763946},
+      destination: {latitude: 9.1776, longitude: 38.7643},
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Function to delete an order
 const deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -582,4 +628,5 @@ module.exports = {
   getDeliveryHistory,
   sendOfferToDeliverPerson,
   offerNotAccepted,
+  getOptimizedRoute,
 };
