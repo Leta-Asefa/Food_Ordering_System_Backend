@@ -199,21 +199,30 @@ const getEstimatedTimeOfArrival = async (req, res) => {
 
     const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
 
-    console.log(requestUrl);
-
+    
     const response = await axios.get(requestUrl);
+    console.log(response.data);
+
     let eta = 0;
     response.data.routes[0].sections.forEach((section) => {
       eta = eta + section.summary.duration;
     });
-
+    
     eta = (eta / 60).toFixed(1);
 
-    res.status(200).json({ durationValue: eta });
+    console.log(response.data.routes[0].sections[0].summary.length);
+    
+    distanceValue=((response.data.routes[0].sections[0].summary.length)/1000 ).toFixed(2)
+
+    res.status(200).json({ durationValue: eta,distanceValue,duration:`${eta} Min`,distance:`${distanceValue} Km`,restaurant });
   } catch (error) {
+    console.log(error)
     res.status(500).json({ error: "Error fetching restaurants", error });
   }
 };
+
+
+
 
 // Get all new unapproved restaurants
 const getNewUnapproved = async (req, res) => {
@@ -396,7 +405,7 @@ const searchByKeyWord = async (req, res, next) => {
           { address: regex },
           { cuisine: regex },
         ],
-      }).select("name image cuisine")
+      }).select("name image cuisine location")
 
 
       const items=await Item.find({
@@ -406,7 +415,7 @@ const searchByKeyWord = async (req, res, next) => {
           { allergensInformation: regex },
           { type: regex },
         ],
-      }).select('name image description')
+      }).select('name image description price restaurantId')
   
       res.status(200).json({result:[...restaurants,...items]});
 

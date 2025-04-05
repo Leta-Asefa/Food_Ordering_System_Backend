@@ -35,16 +35,19 @@ const createOrder = async (req, res) => {
 
     const savedOrder = await newOrder.save();
     const new_order_history = await getNewOrderHistory(userId);
-    io.to("customers").emit("order_history_updated", new_order_history);
+    const customerSocketId=socket_users[userId].socketId
+    console.log("customer socket id ",customerSocketId);
+    io.to(customerSocketId).emit("order_history_updated", new_order_history);
 
     const token = await getFcmToken(userId);
     const message = {
       token, // User's FCM token
       notification: {
-        title: "Notificatoin Title",
-        body: "The body will go here.....",
+        title: "Let's Eat Delivery",
+        body: "Your order was placed! Cooking starts after you pay. Thanks for choosing Let's Eat Delivery!",
         image:
           "https://static.vecteezy.com/system/resources/previews/019/796/973/non_2x/motorbike-delivery-man-logo-icon-symbol-template-free-vector.jpg",
+
       },
       data: {
         customData: "custom data value",
@@ -275,6 +278,8 @@ const getOrderTrackingRoutes = async (req, res) => {
         { latitude: 9.1782, longitude: 38.7667 },
         { latitude: 9.1776, longitude: 38.7643 }, // Destination
       ],
+      userLocation: { latitude: 9.187595, longitude: 38.763946 },
+      destination: { latitude: 9.1776, longitude: 38.7643 },
     });
   } catch (error) {
     console.log(error);
@@ -585,8 +590,8 @@ const getOptimizedRoute = async (req, res) => {
         { latitude: 9.1782, longitude: 38.7665 },
         { latitude: 9.1776, longitude: 38.7643 }, // Destination
       ],
-      userLocation: {latitude: 9.187595, longitude: 38.763946},
-      destination: {latitude: 9.1776, longitude: 38.7643},
+      userLocation: { latitude: 9.187595, longitude: 38.763946 },
+      destination: { latitude: 9.1776, longitude: 38.7643 },
     });
   } catch (error) {
     console.error(error);
