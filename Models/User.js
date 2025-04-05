@@ -51,7 +51,14 @@ const userSchema = new mongoose.Schema({
       type: String, // e.g., 'credit card', 'paypal', etc.
     },
   ],
-   commonDeliveryLocations: [
+  favouriteRestaurants: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
+      required: true,
+    },
+  ],
+  commonDeliveryLocations: [
     {
       name: { type: String, required: true }, // e.g., "Home", "Office"
       latitude: { type: Number, required: true },
