@@ -193,7 +193,12 @@ const updateFavouriteRestaurant = async (req, res, next) => {
       return next(new AppError("User not found", 404));
     }
 
-    if (user.favouriteRestaurants.includes(restaurantId)) {
+
+    const isFavorite=user.favouriteRestaurants.includes(restaurantId)
+    console.log(user.favouriteRestaurants);
+    console.log("includes ",restaurantId);
+
+    if (isFavorite) {
         user.favouriteRestaurants = user.favouriteRestaurants.filter(
           (id) => String(id) !== restaurantId 
         );
@@ -201,15 +206,24 @@ const updateFavouriteRestaurant = async (req, res, next) => {
         user.favouriteRestaurants.push(restaurantId);
       }
   
-    await user.save();
+      try{
+        await user.save();
+      }catch(error){
+        console.log(error);
+        res.json({message:"error on updating"})
+      }
 
-    console.log(user);
+      console.log(user.favouriteRestaurants)
 
-    res.json({ message: "User's Favourite Restaurant is updated successfully",user });
+
+    res.json({ isFavorite:!isFavorite });
   } catch (err) {
     return next(err); // Handle error globally
   }
 };
+
+
+
 
 module.exports = {
   getAllUsers,
