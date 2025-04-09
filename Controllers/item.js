@@ -120,3 +120,22 @@ exports.deleteItemById = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
+// Get top 20 low price food items
+exports.getLowPriceItems = async (req, res) => {
+    try {
+        const food_items = await Item.find({ type: 'Food' })
+            .sort({ price: 1 }) // Sort by price ascending
+            .limit(10);         // Limit to 20 results
+
+            const drink_items = await Item.find({ type: 'Drink' })
+            .sort({ price: 1 }) // Sort by price ascending
+            .limit(10); 
+
+        res.status(200).json({items:[...food_items,...drink_items]});
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: error.message });
+    }
+};
