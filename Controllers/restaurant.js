@@ -135,10 +135,9 @@ const getAllNearRestaurants = async (req, res) => {
 
 const getAllPopularRestaurants = async (req, res) => {
   const { userLongitude, userLatitude } = req.params;
-  console.log("User location ", userLongitude, userLatitude);
   try {
     const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 27);
 
     // Step 1: Find the top 15 restaurants with the most orders in the last 7 days
     const topRestaurants = await Order.aggregate([
@@ -147,7 +146,7 @@ const getAllPopularRestaurants = async (req, res) => {
       { $sort: { orderCount: -1 } }, // Sort by order count (descending)
       { $limit: 15 }, // Get top 15 restaurants
     ]);
-
+    
     // Extract restaurant IDs
     const restaurantIds = topRestaurants.map((r) => r._id);
 
@@ -157,6 +156,7 @@ const getAllPopularRestaurants = async (req, res) => {
       .lean(); // Optimize query by returning plain JavaScript objects
 
     const unsorted = []; //unsorted by distance rather by rating
+
 
     for (const restaurant of restaurants) {
       const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
@@ -201,7 +201,6 @@ const getEstimatedTimeOfArrival = async (req, res) => {
 
     
     const response = await axios.get(requestUrl);
-    console.log(response.data);
 
     let eta = 0;
     response.data.routes[0].sections.forEach((section) => {
@@ -210,7 +209,6 @@ const getEstimatedTimeOfArrival = async (req, res) => {
     
     eta = (eta / 60).toFixed(1);
 
-    console.log(response.data.routes[0].sections[0].summary.length);
     
     distanceValue=((response.data.routes[0].sections[0].summary.length)/1000 ).toFixed(2)
 

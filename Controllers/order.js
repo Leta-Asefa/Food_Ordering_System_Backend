@@ -261,26 +261,24 @@ const getOrderTrackingRoutes = async (req, res) => {
     console.log("Request received for optimized route !");
 
     res.json({
-      routeCoordinates: [
-        { latitude: 9.187595, longitude: 38.763946 }, // Start
-        { latitude: 9.1868, longitude: 38.7645 },
-        { latitude: 9.1859, longitude: 38.765 },
-        { latitude: 9.185, longitude: 38.7657 }, // Turn right
-        { latitude: 9.1845, longitude: 38.7649 },
-        { latitude: 9.1839, longitude: 38.7643 }, // Turn left
-        { latitude: 9.183, longitude: 38.7638 },
-        { latitude: 9.1822, longitude: 38.7636 }, // Slight right
-        { latitude: 9.1814, longitude: 38.7535 },
-        { latitude: 9.1808, longitude: 38.7544 }, // Turn left
-        { latitude: 9.1802, longitude: 38.7655 },
-        { latitude: 9.1795, longitude: 38.7657 }, // Turn right
-        { latitude: 9.1788, longitude: 38.7662 },
-        { latitude: 9.1782, longitude: 38.7667 },
-        { latitude: 9.1776, longitude: 38.7643 }, // Destination
+      routeCoordinates : [
+        { latitude: 9.0200, longitude: 38.7900 }, // Megenagna
+        { latitude: 9.0185, longitude: 38.7850 },
+        { latitude: 9.0160, longitude: 38.7800 },
+        { latitude: 9.0140, longitude: 38.7750 },
+        { latitude: 9.0120, longitude: 38.7700 },
+        { latitude: 9.0100, longitude: 38.7650 },
+        { latitude: 9.0080, longitude: 38.7600 },
+        { latitude: 9.0060, longitude: 38.7550 },
+        { latitude: 9.0040, longitude: 38.7500 },
+        { latitude: 9.0020, longitude: 38.7450 },
+        { latitude: 9.0000, longitude: 38.7400 }, // Meskel Square
       ],
-      userLocation: { latitude: 9.187595, longitude: 38.763946 },
-      destination: { latitude: 9.1776, longitude: 38.7643 },
+      userLocation: { latitude: 9.0200, longitude: 38.7900 },
+      destination: { latitude: 9.0000, longitude: 38.7400 },
     });
+    
+    
   } catch (error) {
     console.log(error);
   }
@@ -573,25 +571,21 @@ const getOptimizedRoute = async (req, res) => {
   try {
     console.log("Optimized Route Request Accepted !");
     res.json({
-      routeCoordinates: [
-        { latitude: 9.187595, longitude: 38.763946 }, // Start
-        { latitude: 9.1868, longitude: 38.7645 },
-        { latitude: 9.1859, longitude: 38.765 },
-        { latitude: 9.185, longitude: 38.7657 }, // Turn right
-        { latitude: 9.1845, longitude: 38.7649 },
-        { latitude: 9.1839, longitude: 38.7643 }, // Turn left
-        { latitude: 9.183, longitude: 38.7633 },
-        { latitude: 9.1822, longitude: 38.7546 }, // Slight right
-        { latitude: 9.1814, longitude: 38.7535 },
-        { latitude: 9.1808, longitude: 38.7544 }, // Turn left
-        { latitude: 9.1802, longitude: 38.7657 },
-        { latitude: 9.1795, longitude: 38.7657 }, // Turn right
-        { latitude: 9.1788, longitude: 38.7542 },
-        { latitude: 9.1782, longitude: 38.7665 },
-        { latitude: 9.1776, longitude: 38.7643 }, // Destination
+      routeCoordinates:[
+        { latitude: 9.0200, longitude: 38.7900 }, // Megenagna
+        { latitude: 9.0185, longitude: 38.7850 },
+        { latitude: 9.0160, longitude: 38.7800 },
+        { latitude: 9.0140, longitude: 38.7750 },
+        { latitude: 9.0120, longitude: 38.7700 },
+        { latitude: 9.0100, longitude: 38.7650 },
+        { latitude: 9.0080, longitude: 38.7600 },
+        { latitude: 9.0060, longitude: 38.7550 },
+        { latitude: 9.0040, longitude: 38.7500 },
+        { latitude: 9.0020, longitude: 38.7450 },
+        { latitude: 9.0000, longitude: 38.7400 }, // Meskel Square
       ],
-      userLocation: { latitude: 9.187595, longitude: 38.763946 },
-      destination: { latitude: 9.1776, longitude: 38.7643 },
+      userLocation: { latitude: 9.0200, longitude: 38.7900 },
+      destination: { latitude: 9.0000, longitude: 38.7400 },
     });
   } catch (error) {
     console.error(error);
