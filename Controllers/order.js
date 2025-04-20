@@ -55,6 +55,7 @@ const createOrder = async (req, res) => {
     };
 
     messaging.send(message);
+    
     res.status(201).json({
       message: "Order created successfully !",
       orderId: savedOrder._id,

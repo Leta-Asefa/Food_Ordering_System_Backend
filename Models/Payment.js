@@ -25,7 +25,7 @@ const paymentSchema = new mongoose.Schema(
       },
       paymentMethod: {
         type: String,
-        enum: ['Card', 'UPI', 'Cash', 'Wallet'],
+        default:"Chapa",
         required: true,
       },
       status: {

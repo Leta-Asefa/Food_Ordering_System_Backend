@@ -1,3 +1,4 @@
+
 const express = require('express')
 const mongoose = require('mongoose')
 const { redisClient } = require('./redis/redis.js') //for the sake of initialization
@@ -124,35 +125,60 @@ const routeCoordinates = [
 
 let counter = 0;
 
-const intervalId = setInterval(() => {
-  // Only proceed if socket_users is not empty
-  if (Object.keys(socket_users).length > 0) {
+// const intervalId = setInterval(() => {
+//   // Only proceed if socket_users is not empty
+//   if (Object.keys(socket_users).length > 0) {
     
     
-    const customerSocketId=socket_users["6780c81259630edf070577be"]?.socketId
-    console.log("started", customerSocketId);
+//     const customerSocketId=socket_users["6780c81259630edf070577be"]?.socketId
+//     console.log("started", customerSocketId);
 
-    // Ensure the customer ID exists before emitting
-    if (customerSocketId) {
-      io.to(customerSocketId).emit("current_location", {
-        current_location: routeCoordinates[counter],
-      });
+//     // Ensure the customer ID exists before emitting
+//     if (customerSocketId) {
+//       io.to(customerSocketId).emit("current_location", {
+//         current_location: routeCoordinates[counter],
+//       });
 
-      counter++;
+//       counter++;
 
-      if (counter >= routeCoordinates.length) {
-        clearInterval(intervalId);
-        console.log("Tracking finished.");
+//       if (counter >= routeCoordinates.length) {
+//         clearInterval(intervalId);
+//         console.log("Tracking finished.");
+//       }
+//     } else {
+//       console.warn("Customer socket ID not found.");
+//     }
+//   } else {
+//     console.warn("No socket users connected yet.");
+//   }
+// }, 300);
+
+async function start(){
+
+  const tx_ref = await chapa.genTxRef();
+  console.log(tx_ref);
+  const response = await chapa.initialize({
+    phone_number: "0987654321",
+    first_name: "Leta Asefa",
+    amount: 40,
+      currency: 'ETB',
+      tx_ref: tx_ref,
+      callback_url: 'http://localhost:3000/',
+      meta: {
+        type: "order",
+        orderId:"67d4688a283fdd9fac7e07fe",
+        userId: "6780c81259630edf070577be",
+        restaurantId:'6788f6372e2c0f688f2a207d'
       }
-    } else {
-      console.warn("Customer socket ID not found.");
-    }
-  } else {
-    console.warn("No socket users connected yet.");
+      
+    });
+    
+    console.log(response.data);
+    
   }
-}, 300);
 
-
+ start()
+// to simulate paying from the customer app  , (why i use start())  
 
 
 const AppError = require('./GlobalErrors/AppError.js');

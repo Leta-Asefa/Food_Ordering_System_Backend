@@ -1,12 +1,14 @@
-const Payment = require('../Models/Payment');
-const Promotion = require('../Models/Promotion')
-const { chapa } = require('../Chapa/chapa');
-const Order = require('../Models/Order');
-const { activatePromotion } = require('./promotion');
-const { socket_users, io } = require('../socket/socket');
-const crypto = require('crypto')
-
-
+const Payment = require("../Models/Payment");
+const Promotion = require("../Models/Promotion");
+const Refund = require("../Models/Refund");
+const { chapa } = require("../Chapa/chapa");
+const Order = require("../Models/Order");
+const { activatePromotion } = require("./promotion");
+const { socket_users, io } = require("../socket/socket");
+const crypto = require("crypto");
+const { getFcmToken } = require("../Firebase/fmc_token_service");
+const { messaging } = require("../Firebase/firebase_config");
+const { default: axios } = require("axios");
 
 // Create a new payment
 const createPayment = async (req, res) => {
@@ -14,7 +16,7 @@ const createPayment = async (req, res) => {
     const { orderId, userId, amount, paymentMethod, restaurantId } = req.body;
 
     if (!orderId || !userId || !amount || !paymentMethod) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
     const payment = new Payment({
@@ -22,13 +24,13 @@ const createPayment = async (req, res) => {
       userId,
       restaurantId,
       paymentMethod,
-      amount
+      amount,
     });
 
     const savedPayment = await payment.save();
     res.status(201).json(savedPayment);
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -37,10 +39,12 @@ const createPayment = async (req, res) => {
 const getPaymentById = async (req, res) => {
   try {
     const { id } = req.params;
-    const payment = await Payment.findById(id).populate('orderId userId restaurantId');
+    const payment = await Payment.findById(id).populate(
+      "orderId userId restaurantId"
+    );
 
     if (!payment) {
-      return res.status(404).json({ message: 'Payment not found' });
+      return res.status(404).json({ message: "Payment not found" });
     }
 
     res.status(200).json(payment);
@@ -53,7 +57,7 @@ const getPaymentById = async (req, res) => {
 const getAllPaymentsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const payments = await Payment.find({ userId }).populate('orderId');
+    const payments = await Payment.find({ userId }).populate("orderId");
 
     res.status(200).json(payments);
   } catch (error) {
@@ -68,13 +72,13 @@ const updatePaymentStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!status) {
-      return res.status(400).json({ message: 'Status is required' });
+      return res.status(400).json({ message: "Status is required" });
     }
 
     const payment = await Payment.findById(id);
 
     if (!payment) {
-      return res.status(404).json({ message: 'Payment not found' });
+      return res.status(404).json({ message: "Payment not found" });
     }
 
     payment.status = status;
@@ -86,43 +90,40 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
-
 const getAllPaymentsByRestaurant = async (req, res) => {
-
   try {
     const { restaurantId } = req.params;
 
     if (!restaurantId) {
-      return res.json({ message: 'Restaurant ID is required' });
+      return res.json({ message: "Restaurant ID is required" });
     }
 
     const payments = await Payment.find({ restaurantId })
       .populate({
-        path: 'orderId',
+        path: "orderId",
         populate: {
-          path: 'items.item',
-          select: 'name price',
+          path: "items.item",
+          select: "name price",
         },
       })
-      .populate('userId', '-password')
-      .populate('orderId.shippingAddress', 'address city')
+      .populate("userId", "-password")
+      .populate("orderId.shippingAddress", "address city")
       .sort({ createdAt: -1 });
 
-
     if (!payments.length) {
-      return res.json({ message: 'No payments found for this restaurant' });
+      return res.json({ message: "No payments found for this restaurant" });
     }
 
     res.status(200).json(payments);
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
 
-
 const getPaymentsByDateRange = async (req, res) => {
   const { startDate, endDate, restaurantId } = req.params;
+  console.log("report ", startDate, endDate, restaurantId);
   try {
     const payments = await Payment.find({
       restaurantId,
@@ -130,148 +131,343 @@ const getPaymentsByDateRange = async (req, res) => {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       },
-    }).populate({
-      path: 'orderId',
-      populate: {
-        path: 'items.item',
-        select: 'name price',
-      },
     })
-      .populate('userId', '-password')
-      .populate('orderId.shippingAddress', 'address city')
+      .populate({
+        path: "orderId",
+        populate: {
+          path: "items.item",
+          select: "name price",
+        },
+      })
+      .populate("userId", "-password")
+      .populate("orderId.shippingAddress", "address city")
       .sort({ createdAt: -1 });
 
     res.status(200).json(payments);
   } catch (error) {
-    console.log(error)
-    res.status(500).json({ message: 'Error fetching payments', error });
+    console.log(error);
+    res.status(500).json({ message: "Error fetching payments", error });
   }
 };
-
-
 
 const getPromotionPaymentPage = async (req, res) => {
-  const { phoneNumber, amount, firstName, promotionId } = req.body
-  const response = await generateTransactionReference(phoneNumber, amount, firstName, promotionId)
-  if (response.status === 'success') {
+  const { phoneNumber, amount, firstName, promotionId } = req.body;
+  const response = await generateTransactionReference(
+    phoneNumber,
+    amount,
+    firstName,
+    promotionId
+  );
+  if (response.status === "success") {
     res.status(201).json({ checkout_url: response.data.checkout_url });
   } else {
-    res.status(400).json({ error: "make sure that you entered all the required fields " });
+    res
+      .status(400)
+      .json({ error: "make sure that you entered all the required fields " });
   }
-
 };
 
-
 const getOrderPaymentPage = async (req, res) => {
-  const { phoneNumber, amount, firstName, subAccountId, orderId, userId } = req.body
+  const {
+    phoneNumber,
+    amount,
+    firstName,
+    subAccountId,
+    orderId,
+    userId,
+    restaurantId,
+  } = req.body;
 
-  console.log(orderId, userId)
-  const order = await Order.findById(orderId)
-  if (!order) return res.json({ error: 'No order is found !' })
+  console.log(orderId, userId);
+  const order = await Order.findById(orderId);
+  if (!order) return res.json({ error: "No order is found !" });
 
   if (!order.checkout_url) {
-
-
     const tx_ref = await chapa.genTxRef();
     const response = await chapa.initialize({
       phone_number: phoneNumber,
       first_name: firstName,
       amount: amount,
-      currency: 'ETB',
+      currency: "ETB",
       tx_ref: tx_ref,
-      callback_url: 'http://localhost:3000/',
+      callback_url: "http://localhost:3000/",
       split: {
-        subaccounts: [{ id: subAccountId }]
+        subaccounts: [{ id: subAccountId }],
       },
       meta: {
         type: "order",
         orderId,
-        userId
-      }
-
+        userId,
+        restaurantId,
+      },
     });
 
-    if (response.status === 'success') {
-      order.checkout_url = response.data.checkout_url
-      await order.save()
+    if (response.status === "success") {
+      order.checkout_url = response.data.checkout_url;
+      await order.save();
       res.status(201).json({ checkout_url: response.data.checkout_url });
-    }
-    else {
+    } else {
       res.status(201).json({ checkout_url: order.checkout_url });
     }
-
   } else {
-    res.status(400).json({ error: "make sure that you entered all the required fields " });
+    res
+      .status(400)
+      .json({ error: "make sure that you entered all the required fields " });
   }
-
 };
 
-
-
-
-const generateTransactionReference = async (phoneNumber, amount, firstName, promotionId) => {
+const generateTransactionReference = async (
+  phoneNumber,
+  amount,
+  firstName,
+  promotionId
+) => {
   const tx_ref = await chapa.genTxRef();
   const response = await chapa.initialize({
     phone_number: phoneNumber,
     first_name: firstName,
     amount: amount,
-    currency: 'ETB',
+    currency: "ETB",
     tx_ref: tx_ref,
-    callback_url: 'http://localhost:3000/',
-
+    callback_url: "http://localhost:3000/",
   });
 
-  if (response.status === 'success') {
-    const promotion = await Promotion.findById(promotionId)
-    promotion.tx_ref = tx_ref
-    await promotion.save()
+  if (response.status === "success") {
+    const promotion = await Promotion.findById(promotionId);
+    promotion.tx_ref = tx_ref;
+    await promotion.save();
   }
-  return response
-
-
-}
-
-const verify = async (tx_ref) => {
-  console.log(tx_ref)
-  const response = await chapa.verify({ tx_ref });
-  response.data.status === 'success' ? true : false
-
-}
-
-const chapaWebhook = async (req, res) => {
-  
-  console.log("Web hook is called")
-  const {orderId,userId,type}=req.body.meta
-
-  const hash = crypto.createHmac('sha256', process.env.CHAPA_WEBHOOK_SECRET_KEY).update(JSON.stringify(req.body)).digest('hex');
-  
-  if (hash == req.headers['x-chapa-signature']) { // we know it is from the right source
-    
-    if (type === 'order' && req.body.status === 'success') {
-      const order = await Order.findById(orderId)
-      if(order.status==='Processing') return // as chapa my send the same webhook request multiple times
-      order.tx_ref = req.body.tx_ref
-      order.status = 'Processing'
-      await order.save()
-
-      const userSocketId = socket_users[userId]?.socketId
-      if (userSocketId)
-        io.to(userSocketId).emit('order_status_update', { message: "Dear Customer, Your order "+orderId+ " is being processed. It will be on transit soon. Thank you for your patience !" })
-      console.log("io sent")
-      return
-    }
-    else {
-      activatePromotion(req, res)
-      return
-    }
-
-
-  }
-
-
+  return response;
 };
 
+const verify = async (tx_ref) => {
+  console.log(tx_ref);
+  const response = await chapa.verify({ tx_ref });
+  response.data.status === "success" ? true : false;
+};
 
+const chapaWebhook = async (req, res) => {
+  console.log("Web hook is called", req.body);
+  const { orderId, userId, restaurantId, type, refundRequestId } =
+    req.body.meta;
+
+  const hash = crypto
+    .createHmac("sha256", process.env.CHAPA_WEBHOOK_SECRET_KEY)
+    .update(JSON.stringify(req.body))
+    .digest("hex");
+
+  if (hash == req.headers["x-chapa-signature"]) {
+    // we know it is from the right source
+
+    if (type === "order" && req.body.status === "success") {
+      const order = await Order.findById(orderId);
+      if (order.status === "Processing") return; // as chapa my send the same webhook request multiple times
+      order.tx_ref = req.body.reference;
+      order.status = "Processing";
+      await order.save();
+
+      const payment = new Payment({
+        orderId,
+        userId,
+        restaurantId,
+        amount: parseInt(req.body.amount),
+        status:"Paid"
+      });
+
+      const savedPayment = await payment.save();
+
+      const userSocketId = socket_users[userId]?.socketId;
+      if (userSocketId)
+        io.to(userSocketId).emit("order_status_update", {
+          message:
+            "Dear Customer, Your order " +
+            orderId +
+            " is being processed. It will be on transit soon. Thank you for your patience !",
+        });
+      console.log("io sent");
+      return;
+    }
+     else if (type === "refund" && req.body.status === "success") {
+
+      try {
+        const order = await Order.findById(orderId);
+        const tx_ref = order.tx_ref;
+        const refund = await Refund.findById(refundRequestId);
+        if(refund.status==="Initialized") return
+        
+        const response = await axios.post(
+            `https://api.chapa.co/v1/refund/${tx_ref}`,
+            {
+              reason: "customer requests refund !",
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          console.log("refund response", response.data);
+
+
+          if (response.data.data.status === "initiated") {
+            refund.status = "Initiated";
+            refund.tx_ref=req.body.tx_ref
+            await refund.save();
+            order.status = "Cancelled";
+            await order.save();
+
+            console.log("refund request is initiated");
+
+            const token = await getFcmToken(order.userId);
+            const message = {
+              token, // User's FCM token
+              notification: {
+                title: "Let's Eat Delivery",
+                body: "Your refund request has been initiated.",
+              },
+              data: {
+                customData: "custom data value",
+              },
+            };
+
+            messaging.send(message);
+          }
+
+      } catch (error) {
+        console.log(error);
+      }
+
+
+
+    }
+    else if(req.body.status === "refunded") {
+      const order = await Order.find({tx_ref:req.body.tx_ref});
+      order.status = "Cancelled";
+      await order.save();
+      const refund = await Refund.find({tx_ref:req.body.tx_ref});
+      refund.status = "Refunded";
+      await refund.save();
+
+
+    }
+
+    else {
+      activatePromotion(req, res);
+      return;
+    }
+  }
+};
+
+const getRefundRequests = async (req, res) => {
+  const { restaurantId } = req.params;
+
+  try {
+    if (!restaurantId) {
+      return res.json({ message: "Restaurant ID is required" });
+    }
+
+    const refunds = await Refund.find({ restaurantId, status: "Requested" })
+      .populate("userId", "phoneNumber username")
+      .sort({ createdAt: -1 });
+
+    if (!refunds.length) {
+      return res.json({ message: "No Refund Requests are found " });
+    }
+
+    res.status(200).json({ refunds });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getRefundRequestsByUserId = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    if (!userId) {
+      return res.json({ message: "User ID is required" });
+    }
+
+    const refunds = await Refund.find({ userId });
+
+    if (!refunds.length) {
+      return res.json({ message: "No Refund Requests are found " });
+    }
+
+    res.status(200).json({ refunds });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const declineRefundRequest = async (req, res) => {
+  const { refundRequestId } = req.params;
+
+  try {
+    if (!refundRequestId) {
+      return res.json({ message: "refundRequestId  ID is required" });
+    }
+
+    const refund = await Refund.findById(refundRequestId);
+    refund.status = "Declined";
+    await refund.save();
+
+    const token = await getFcmToken(refund.userId);
+    const message = {
+      token, // User's FCM token
+      notification: {
+        title: "Let's Eat Delivery",
+        body: "Your refund request has been declined",
+      },
+      data: {
+        customData: "custom data value",
+      },
+    };
+    messaging.send(message);
+
+    return res.json({ message: "Refund Request is declined successfully ! " });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const approveRefundRequest = async (req, res) => {
+  const { orderId, refundRequestId, phoneNumber, amount, restaurantName } =
+    req.params;
+
+  const refund = await Refund.findById(refundRequestId);
+  if (!refund) return res.json({ error: "No refund is found !" });
+
+  const tx_ref = await chapa.genTxRef();
+
+  const response = await chapa.initialize({
+    phone_number: "0987654321",
+    first_name: restaurantName,
+    amount: amount,
+    currency: "ETB",
+    tx_ref: tx_ref,
+    callback_url: "http://localhost:3000/",
+    meta: {
+      type: "refund",
+      refundRequestId,
+      orderId,
+    },
+  });
+
+  if (response.status === "success") {
+    res.json({ checkout_url: response.data.checkout_url });
+    return;
+  }
+
+  res.json({
+    message: "Refund is Not Initialized. Please  Try again later ! ",
+  });
+};
 
 module.exports = {
   createPayment,
@@ -283,5 +479,9 @@ module.exports = {
   verify,
   getOrderPaymentPage,
   getPromotionPaymentPage,
-  chapaWebhook
+  chapaWebhook,
+  getRefundRequests,
+  declineRefundRequest,
+  getRefundRequestsByUserId,
+  approveRefundRequest,
 };
