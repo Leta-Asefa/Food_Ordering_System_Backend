@@ -1,12 +1,14 @@
 const { default: axios } = require("axios");
 const Restaurant = require("../Models/Restaurant"); // Adjust the path to your Restaurant model
 const Order = require("../Models/Order");
+const Refund = require("../Models/Refund");
 const { io } = require("../socket/socket");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const AppError = require("../GlobalErrors/AppError");
 const { chapa } = require("../Chapa/chapa");
 const Item = require("../Models/Item");
+const Subscription = require('../Models/Subscription');
 
 function createToken(id) {
   return jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -14,11 +16,112 @@ function createToken(id) {
   });
 }
 
+const getAdminDashboardSummary = async (req, res) => {
+  try {
+    const restaurantId = new mongoose.Types.ObjectId(req.params.restaurantId);
+    const days = parseInt(req.params.days) || 30;
+    const today = new Date();
+    const lastNDays = new Date(today);
+    lastNDays.setDate(today.getDate() - days);
+
+    // Orders & income over time
+    const ordersOverTime = await Order.aggregate([
+      { $match: { createdAt: { $gte: lastNDays }, restaurantId } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 },
+          income: { $sum: "$totalAmount" }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Order status distribution (filtered by date)
+    const orderStatus = await Order.aggregate([
+      { $match: { restaurantId, createdAt: { $gte: lastNDays } } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Refunds (filtered by date)
+    const refunds = await Refund.aggregate([
+      { $match: { restaurantId, createdAt: { $gte: lastNDays } } },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          total: { $sum: "$amount" }
+        }
+      }
+    ]);
+
+    // Top sales (by item, filtered by date)
+    const topSales = await Order.aggregate([
+      { $match: { restaurantId, createdAt: { $gte: lastNDays } } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.item",
+          totalQuantity: { $sum: "$items.quantity" }
+        }
+      },
+      {
+        $lookup: {
+          from: "items",
+          localField: "_id",
+          foreignField: "_id",
+          as: "itemDetails"
+        }
+      },
+      { $unwind: "$itemDetails" },
+      {
+        $project: {
+          _id: 0,
+          itemName: "$itemDetails.name",
+          quantity: "$totalQuantity"
+        }
+      },
+      { $sort: { quantity: -1 } },
+      { $limit: 5 }
+    ]);
+
+    res.json({
+      ordersOverTime: ordersOverTime.map(o => ({ date: o._id, count: o.count })),
+      incomeOverTime: ordersOverTime.map(o => ({ date: o._id, income: o.income })),
+      totalOrders: ordersOverTime.reduce((acc, cur) => acc + cur.count, 0),
+      totalIncome: ordersOverTime.reduce((acc, cur) => acc + cur.income, 0),
+      refundCount: refunds[0]?.count || 0,
+      refundTotal: refunds[0]?.total || 0,
+      topSales,
+      orderStatusDistribution: Object.fromEntries(orderStatus.map(o => [o._id, o.count]))
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong while fetching summary." });
+  }
+};
+
+
 // Create a new restaurant
 const createRestaurant = async (req, res) => {
   try {
     const newRestaurant = new Restaurant(req.body);
     await newRestaurant.save();
+    const subscription = new Subscription({
+      restaurantId: newRestaurant._id,
+      startDate: new Date(),
+      endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // 1 month plan
+      status: 'Not Paid',
+    });
+
+    await subscription.save();
+
 
     const newUnapprovedRestaurants = await Restaurant.find({
       isApproved: false,
@@ -518,4 +621,5 @@ module.exports = {
   searchByKeyWord,
   getFavoriteRestaurantsByUserId,
   login,
+  getAdminDashboardSummary
 };

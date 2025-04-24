@@ -63,6 +63,9 @@ app.use('/order', orderRouter)
 const paymentRouter = require('./Routes/payment.js')
 app.use('/payment', paymentRouter)
 
+const subscriptionRouter = require('./Routes/subscription.js')
+app.use('/subscription', subscriptionRouter)
+
 
 const resadminRouter = require('./Routes/resadmin.js');
 app.use('/resadmin', resadminRouter)
@@ -177,7 +180,7 @@ async function start(){
     
   }
 
- start()
+ //start()
 // to simulate paying from the customer app  , (why i use start())  
 
 

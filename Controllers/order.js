@@ -298,8 +298,10 @@ const getDeliveryPersonOrder = async (req, res) => {
 
     const order = await Order.findById(
       user.assignedOrder,
-      "eta userId status shippingAddress"
-    ).populate("userId", "nationalId phoneNumber username");
+      "eta userId restaurantId status shippingAddress"
+    ).populate("userId", "nationalId phoneNumber username")
+   .populate("restaurantId", "name location");
+
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -415,8 +417,9 @@ const updateDeliveryPerson = async (req, res) => {
 
     const order = await Order.findById(
       orderId,
-      "eta userId status shippingAddress deliveryPersonId"
-    ).populate("userId", "nationalId phoneNumber username");
+      "eta userId restaurantId status shippingAddress deliveryPersonId"
+    ).populate("userId", "nationalId phoneNumber username")
+    .populate("restaurantId", "name location");
 
     const user = await User.findById(deliveryPersonId);
 
@@ -508,7 +511,7 @@ const sendOfferToDeliverPerson = async (req, res) => {
     const { orderId, deliveryPersonId, restaurantId } = req.params;
     const order = await Order.findById(
       orderId,
-      "shippingAddress restaurantId eta"
+      "shippingAddress restaurantId eta userId"
     ).populate("restaurantId", "address");
 
     const deliveryPersonSocketId = socket_users[deliveryPersonId]?.socketId;
@@ -530,7 +533,10 @@ const sendOfferToDeliverPerson = async (req, res) => {
       pickupLocation: order.restaurantId.address,
       deliveryLocation: order.shippingAddress.address,
       eta: order.eta,
+      userId:order.userId
     });
+
+   
 
     res.json({ message: "Notification is sent" });
   } catch (error) {

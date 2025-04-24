@@ -9,6 +9,8 @@ const crypto = require("crypto");
 const { getFcmToken } = require("../Firebase/fmc_token_service");
 const { messaging } = require("../Firebase/firebase_config");
 const { default: axios } = require("axios");
+const Subscription = require("../Models/Subscription");
+const Restaurant = require("../Models/Restaurant");
 
 // Create a new payment
 const createPayment = async (req, res) => {
@@ -248,7 +250,7 @@ const verify = async (tx_ref) => {
 
 const chapaWebhook = async (req, res) => {
   console.log("Web hook is called", req.body);
-  const { orderId, userId, restaurantId, type, refundRequestId } =
+  const { orderId, userId, restaurantId, type, refundRequestId,subscriptionId } =
     req.body.meta;
 
   const hash = crypto
@@ -340,6 +342,26 @@ const chapaWebhook = async (req, res) => {
       }
 
 
+
+    }else if (type==='subscription' && req.body.status==="success"){
+
+      const subscription = await Subscription.findById(subscriptionId);
+  
+      const now = new Date();
+      const nextMonth = new Date();
+      nextMonth.setMonth(now.getMonth() + 1);
+  
+      subscription.startDate = now;
+      subscription.endDate = nextMonth;
+      subscription.status = 'Paid';
+  
+      const restaurant = await Restaurant.findById(restaurantId);
+      restaurant.status = 'Normal';
+      await subscription.save();
+      await restaurant.save();
+  
+  
+  
 
     }
     else if(req.body.status === "refunded") {
