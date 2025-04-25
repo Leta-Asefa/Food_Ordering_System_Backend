@@ -222,7 +222,25 @@ const updateFavouriteRestaurant = async (req, res, next) => {
   }
 };
 
+const getAllDeliveryPeople = async (req, res) => {
+  try {
+    const deliveryPeople = await User.find({ role: 'delivery' }).select('-password');
+    res.status(200).json(deliveryPeople);
+  } catch (error) {
+    console.error('Error fetching delivery people:', error);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
 
+const getAllUnapprovedPeople = async (req, res) => {
+  try {
+    const deliveryPeople = await User.find({ status: 'Unapproved' }).select('-password');
+    res.status(200).json(deliveryPeople);
+  } catch (error) {
+    console.error('Error fetching delivery people:', error);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
 
 
 module.exports = {
@@ -234,4 +252,6 @@ module.exports = {
   getByEmployer,
   updateUser,
   updateFavouriteRestaurant,
+  getAllDeliveryPeople,
+  getAllUnapprovedPeople
 };

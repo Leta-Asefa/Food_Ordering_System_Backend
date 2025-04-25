@@ -92,6 +92,9 @@ const userSchema = new mongoose.Schema({
   location: {
     type: String, // Track location in a city, coordinates can be added for more advanced tracking
   },
+  status: {
+    type: String, // Track location in a city, coordinates can be added for more advanced tracking
+  }
 });
 
 // Hash password before saving the user

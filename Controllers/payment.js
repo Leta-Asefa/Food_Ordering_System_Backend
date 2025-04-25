@@ -250,8 +250,14 @@ const verify = async (tx_ref) => {
 
 const chapaWebhook = async (req, res) => {
   console.log("Web hook is called", req.body);
-  const { orderId, userId, restaurantId, type, refundRequestId,subscriptionId } =
-    req.body.meta;
+  const {
+    orderId,
+    userId,
+    restaurantId,
+    type,
+    refundRequestId,
+    subscriptionId,
+  } = req.body.meta;
 
   const hash = crypto
     .createHmac("sha256", process.env.CHAPA_WEBHOOK_SECRET_KEY)
@@ -273,7 +279,7 @@ const chapaWebhook = async (req, res) => {
         userId,
         restaurantId,
         amount: parseInt(req.body.amount),
-        status:"Paid"
+        status: "Paid",
       });
 
       const savedPayment = await payment.save();
@@ -288,94 +294,79 @@ const chapaWebhook = async (req, res) => {
         });
       console.log("io sent");
       return;
-    }
-     else if (type === "refund" && req.body.status === "success") {
-
+    } else if (type === "refund" && req.body.status === "success") {
       try {
         const order = await Order.findById(orderId);
         const tx_ref = order.tx_ref;
         const refund = await Refund.findById(refundRequestId);
-        if(refund.status==="Initialized") return
-        
+        if (refund.status === "Initialized") return;
+
         const response = await axios.post(
-            `https://api.chapa.co/v1/refund/${tx_ref}`,
-            {
-              reason: "customer requests refund !",
+          `https://api.chapa.co/v1/refund/${tx_ref}`,
+          {
+            reason: "customer requests refund !",
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+              "Content-Type": "application/json",
             },
-            {
-              headers: {
-                Authorization: `Bearer ${process.env.CHAPA_SECRET_KEY}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-
-          console.log("refund response", response.data);
-
-
-          if (response.data.data.status === "initiated") {
-            refund.status = "Initiated";
-            refund.tx_ref=req.body.tx_ref
-            await refund.save();
-            order.status = "Cancelled";
-            await order.save();
-
-            console.log("refund request is initiated");
-
-            const token = await getFcmToken(order.userId);
-            const message = {
-              token, // User's FCM token
-              notification: {
-                title: "Let's Eat Delivery",
-                body: "Your refund request has been initiated.",
-              },
-              data: {
-                customData: "custom data value",
-              },
-            };
-
-            messaging.send(message);
           }
+        );
 
+        console.log("refund response", response.data);
+
+        if (response.data.data.status === "initiated") {
+          refund.status = "Initiated";
+          refund.tx_ref = req.body.tx_ref;
+          await refund.save();
+          order.status = "Cancelled";
+          await order.save();
+
+          console.log("refund request is initiated");
+
+          const token = await getFcmToken(order.userId);
+          const message = {
+            token, // User's FCM token
+            notification: {
+              title: "Let's Eat Delivery",
+              body: "Your refund request has been initiated.",
+            },
+            data: {
+              customData: "custom data value",
+            },
+          };
+
+          messaging.send(message);
+        }
       } catch (error) {
         console.log(error);
       }
+    } else if (type === "subscription" && req.body.status === "success") {
 
-
-
-    }else if (type==='subscription' && req.body.status==="success"){
-
-      const subscription = await Subscription.findById(subscriptionId);
-  
       const now = new Date();
       const nextMonth = new Date();
       nextMonth.setMonth(now.getMonth() + 1);
-  
-      subscription.startDate = now;
-      subscription.endDate = nextMonth;
-      subscription.status = 'Paid';
-  
+
+   const    subscription = new Subscription({
+        restaurantId,
+        startDate: now,
+        amount:process.env.SUBSCRIPTION_PRICE,
+        endDate: nextMonth,
+        status: "Paid",
+      });
       const restaurant = await Restaurant.findById(restaurantId);
-      restaurant.status = 'Normal';
+      restaurant.status = "Normal";
       await subscription.save();
       await restaurant.save();
-  
-  
-  
-
-    }
-    else if(req.body.status === "refunded") {
-      const order = await Order.find({tx_ref:req.body.tx_ref});
+    } else if (req.body.status === "refunded") {
+      const order = await Order.find({ tx_ref: req.body.tx_ref });
       order.status = "Cancelled";
       await order.save();
-      const refund = await Refund.find({tx_ref:req.body.tx_ref});
+      const refund = await Refund.find({ tx_ref: req.body.tx_ref });
       refund.status = "Refunded";
       await refund.save();
-
-
-    }
-
-    else {
+    } else {
       activatePromotion(req, res);
       return;
     }

@@ -64,7 +64,9 @@ exports.getByRestaurantId = async (req, res) => {
   try {
     const subscription = await Subscription.findOne({
       restaurantId: req.params.restaurantId,
-    });
+    }).sort({startDate:-1}).limit(1);
+
+    console.log("sup",subscription);
     if (!subscription)
       return res.status(404).json({ error: "Subscription not found" });
     res.json(subscription);

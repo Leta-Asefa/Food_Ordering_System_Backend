@@ -53,7 +53,7 @@ const restaurantSchema = new mongoose.Schema({
     pictures:[{type:String}],
     status: {
         type: String,
-        enum: ['New', 'Deliquent', 'Terminated','Normal'],
+        enum: ['New', 'Inactive','Active'],
         default: 'New'
     },
     password: {
@@ -73,9 +73,20 @@ const restaurantSchema = new mongoose.Schema({
     subAccountId:{
         type:String
     },
-
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date
+    }
 });
 
+// Middleware to update the updatedAt field
+restaurantSchema.pre('save', function (next) {
+    this.updatedAt = Date.now();
+    next();
+});
 // Create a 2dsphere index on the location field
 restaurantSchema.index({ location: '2dsphere' });
 

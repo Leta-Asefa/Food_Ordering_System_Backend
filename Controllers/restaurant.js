@@ -8,7 +8,8 @@ const mongoose = require("mongoose");
 const AppError = require("../GlobalErrors/AppError");
 const { chapa } = require("../Chapa/chapa");
 const Item = require("../Models/Item");
-const Subscription = require('../Models/Subscription');
+const Subscription = require("../Models/Subscription");
+const User = require("../Models/User");
 
 function createToken(id) {
   return jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -31,10 +32,10 @@ const getAdminDashboardSummary = async (req, res) => {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
           count: { $sum: 1 },
-          income: { $sum: "$totalAmount" }
-        }
+          income: { $sum: "$totalAmount" },
+        },
       },
-      { $sort: { _id: 1 } }
+      { $sort: { _id: 1 } },
     ]);
 
     // Order status distribution (filtered by date)
@@ -43,9 +44,9 @@ const getAdminDashboardSummary = async (req, res) => {
       {
         $group: {
           _id: "$status",
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     // Refunds (filtered by date)
@@ -55,9 +56,9 @@ const getAdminDashboardSummary = async (req, res) => {
         $group: {
           _id: null,
           count: { $sum: 1 },
-          total: { $sum: "$amount" }
-        }
-      }
+          total: { $sum: "$amount" },
+        },
+      },
     ]);
 
     // Top sales (by item, filtered by date)
@@ -67,46 +68,147 @@ const getAdminDashboardSummary = async (req, res) => {
       {
         $group: {
           _id: "$items.item",
-          totalQuantity: { $sum: "$items.quantity" }
-        }
+          totalQuantity: { $sum: "$items.quantity" },
+        },
       },
       {
         $lookup: {
           from: "items",
           localField: "_id",
           foreignField: "_id",
-          as: "itemDetails"
-        }
+          as: "itemDetails",
+        },
       },
       { $unwind: "$itemDetails" },
       {
         $project: {
           _id: 0,
           itemName: "$itemDetails.name",
-          quantity: "$totalQuantity"
-        }
+          quantity: "$totalQuantity",
+        },
       },
       { $sort: { quantity: -1 } },
-      { $limit: 5 }
+      { $limit: 5 },
     ]);
 
     res.json({
-      ordersOverTime: ordersOverTime.map(o => ({ date: o._id, count: o.count })),
-      incomeOverTime: ordersOverTime.map(o => ({ date: o._id, income: o.income })),
+      ordersOverTime: ordersOverTime.map((o) => ({
+        date: o._id,
+        count: o.count,
+      })),
+      incomeOverTime: ordersOverTime.map((o) => ({
+        date: o._id,
+        income: o.income,
+      })),
       totalOrders: ordersOverTime.reduce((acc, cur) => acc + cur.count, 0),
       totalIncome: ordersOverTime.reduce((acc, cur) => acc + cur.income, 0),
       refundCount: refunds[0]?.count || 0,
       refundTotal: refunds[0]?.total || 0,
       topSales,
-      orderStatusDistribution: Object.fromEntries(orderStatus.map(o => [o._id, o.count]))
+      orderStatusDistribution: Object.fromEntries(
+        orderStatus.map((o) => [o._id, o.count])
+      ),
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Something went wrong while fetching summary." });
+    res
+      .status(500)
+      .json({ error: "Something went wrong while fetching summary." });
   }
 };
 
+const getSuperAdminDashboardSummary = async (req, res) => {
+  const days = parseInt(req.params.days, 10);
+
+  try {
+    const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    // New restaurants in the last N days
+    const newRestaurants = await Restaurant.countDocuments({
+      createdAt: { $gte: fromDate },
+    });
+    console.log("new restaurants", fromDate);
+
+    // New delivery people in the last N days
+    const newDeliveryPeople = await User.countDocuments({
+      role: "delivery",
+      createdAt: { $gte: fromDate },
+    });
+
+    // Active users
+    const activeUsers = await User.countDocuments({ isActive: true });
+
+    // Alerts (example: restaurants with status 'Delinquent')
+    const alerts = await Restaurant.countDocuments({ status: "Deliquent" });
+
+    // Revenue by month for the last 6 months
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getDay() - days);
+    sixMonthsAgo.setDate(1); // start from the beginning of that month
+
+    const revenueRaw = await Subscription.aggregate([
+      {
+        $match: {
+          status: "Paid",
+          startDate: { $gte: sixMonthsAgo },
+        },
+      },
+      {
+        $group: {
+          _id: { $month: "$startDate" },
+          revenue: { $sum: "$amount" },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const revenueData = revenueRaw.map((entry) => ({
+      month: months[entry._id - 1],
+      revenue: entry.revenue,
+    }));
+
+    // Subscription summary
+    const paidCount = await Subscription.countDocuments({ status: "Paid" });
+    const unpaidCount = await Subscription.countDocuments({
+      status: "Not Paid",
+    });
+
+    const subscriptionData = [
+      { name: "Paid", value: paidCount },
+      { name: "Unpaid", value: unpaidCount },
+    ];
+
+    return res.json({
+      stats: {
+        newRestaurants,
+        newDeliveryPeople,
+        activeUsers,
+        alerts,
+      },
+      revenueData,
+      subscriptionData,
+    });
+  } catch (err) {
+    console.error("Dashboard Summary Error:", err);
+    res.status(500).json({ message: "Failed to fetch dashboard data." });
+  }
+};
 
 // Create a new restaurant
 const createRestaurant = async (req, res) => {
@@ -117,11 +219,10 @@ const createRestaurant = async (req, res) => {
       restaurantId: newRestaurant._id,
       startDate: new Date(),
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // 1 month plan
-      status: 'Not Paid',
+      status: "Not Paid",
     });
 
     await subscription.save();
-
 
     const newUnapprovedRestaurants = await Restaurant.find({
       isApproved: false,
@@ -249,7 +350,7 @@ const getAllPopularRestaurants = async (req, res) => {
       { $sort: { orderCount: -1 } }, // Sort by order count (descending)
       { $limit: 15 }, // Get top 15 restaurants
     ]);
-    
+
     // Extract restaurant IDs
     const restaurantIds = topRestaurants.map((r) => r._id);
 
@@ -259,7 +360,6 @@ const getAllPopularRestaurants = async (req, res) => {
       .lean(); // Optimize query by returning plain JavaScript objects
 
     const unsorted = []; //unsorted by distance rather by rating
-
 
     for (const restaurant of restaurants) {
       const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
@@ -302,28 +402,33 @@ const getEstimatedTimeOfArrival = async (req, res) => {
 
     const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${userLatitude},${userLongitude}&destination=${restaurant.location.coordinates[1]},${restaurant.location.coordinates[0]}&transportMode=pedestrian&return=summary`;
 
-    
     const response = await axios.get(requestUrl);
 
     let eta = 0;
     response.data.routes[0].sections.forEach((section) => {
       eta = eta + section.summary.duration;
     });
-    
+
     eta = (eta / 60).toFixed(1);
 
-    
-    distanceValue=((response.data.routes[0].sections[0].summary.length)/1000 ).toFixed(2)
+    distanceValue = (
+      response.data.routes[0].sections[0].summary.length / 1000
+    ).toFixed(2);
 
-    res.status(200).json({ durationValue: eta,distanceValue,duration:`${eta} Min`,distance:`${distanceValue} Km`,restaurant });
+    res
+      .status(200)
+      .json({
+        durationValue: eta,
+        distanceValue,
+        duration: `${eta} Min`,
+        distance: `${distanceValue} Km`,
+        restaurant,
+      });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({ error: "Error fetching restaurants", error });
   }
 };
-
-
-
 
 // Get all new unapproved restaurants
 const getNewUnapproved = async (req, res) => {
@@ -336,6 +441,48 @@ const getNewUnapproved = async (req, res) => {
     res.status(200).json(newUnapprovedRestaurants);
   } catch (error) {
     res.status(500).json({ message: "Error fetching restaurants", error });
+  }
+};
+
+const getInactiveRestaurants = async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Get expired subscriptions
+    const expiredSubscriptions = await Subscription.find({
+      endDate: { $lt: now },
+    }).select("restaurantId endDate");
+
+    const expiredRestaurantIds = expiredSubscriptions.map(
+      (sub) => sub.restaurantId
+    );
+
+    // Fetch restaurants whose subscriptions are expired
+    const restaurants = await Restaurant.find({
+      _id: { $in: expiredRestaurantIds },
+    });
+
+    // Map through restaurants and attach how many days have passed
+    const result = restaurants.map((restaurant) => {
+      const sub = expiredSubscriptions.find(
+        (sub) => sub.restaurantId.toString() === restaurant._id.toString()
+      );
+      const daysPassed = Math.floor(
+        (now - new Date(sub.endDate)) / (1000 * 60 * 60 * 24)
+      );
+
+      return {
+        ...restaurant.toObject(),
+        daysSinceSubscriptionExpired: daysPassed,
+      };
+    });
+
+    console.log("Inactive Restaurants:", result);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching inactive restaurants:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
@@ -494,38 +641,31 @@ const getBankIdByName = async (bankName) => {
 
 // Search Restaurants, Items ... through keyword
 const searchByKeyWord = async (req, res, next) => {
-    const queryText = req.params.queryText;
-    const regex = new RegExp(`.*${queryText}.*`, "i"); // Case-insensitive regex
-  
-    console.log("Query Text", queryText);
-  
-    try {
-      const restaurants = await Restaurant.find({
-        $or: [
-          { name: regex },
-          { address: regex },
-          { cuisine: regex },
-        ],
-      }).select("name image cuisine location")
+  const queryText = req.params.queryText;
+  const regex = new RegExp(`.*${queryText}.*`, "i"); // Case-insensitive regex
 
+  console.log("Query Text", queryText);
 
-      const items=await Item.find({
-        $or: [
-          { name: regex },
-          { description: regex },
-          { allergensInformation: regex },
-          { type: regex },
-        ],
-      }).select('name image description price restaurantId')
-  
-      res.status(200).json({result:[...restaurants,...items]});
+  try {
+    const restaurants = await Restaurant.find({
+      $or: [{ name: regex }, { address: regex }, { cuisine: regex }],
+    }).select("name image cuisine location");
 
+    const items = await Item.find({
+      $or: [
+        { name: regex },
+        { description: regex },
+        { allergensInformation: regex },
+        { type: regex },
+      ],
+    }).select("name image description price restaurantId");
 
-    } catch (error) {
-      next(new AppError("Internal Problem", 500)); // Ensure next() is available
-    }
-  };
-  
+    res.status(200).json({ result: [...restaurants, ...items] });
+  } catch (error) {
+    next(new AppError("Internal Problem", 500)); // Ensure next() is available
+  }
+};
+
 // Delete a restaurant by ID
 const deleteRestaurant = async (req, res) => {
   try {
@@ -539,16 +679,13 @@ const deleteRestaurant = async (req, res) => {
   }
 };
 
-
 // Delete a restaurant by ID
 const getFavoriteRestaurantsByUserId = async (req, res) => {
-
-  let restaurantsIdList=req.body.restaurantsIdList
-   console.log("fav list id",restaurantsIdList);
-  const {userLatitude,userLongitude}=req.params
+  let restaurantsIdList = req.body.restaurantsIdList;
+  console.log("fav list id", restaurantsIdList);
+  const { userLatitude, userLongitude } = req.params;
 
   try {
-  
     const restaurants = await Restaurant.find({
       _id: { $in: restaurantsIdList },
     });
@@ -584,8 +721,7 @@ const getFavoriteRestaurantsByUserId = async (req, res) => {
       (a, b) => a.distanceValue - b.distanceValue
     );
 
-    res.status(200).json({restaurants:sortedByDistance});
-
+    res.status(200).json({ restaurants: sortedByDistance });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error deleting restaurant", error });
@@ -621,5 +757,7 @@ module.exports = {
   searchByKeyWord,
   getFavoriteRestaurantsByUserId,
   login,
-  getAdminDashboardSummary
+  getAdminDashboardSummary,
+  getSuperAdminDashboardSummary,
+  getInactiveRestaurants,
 };
