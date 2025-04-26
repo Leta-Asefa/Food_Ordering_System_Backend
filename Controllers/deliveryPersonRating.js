@@ -1,5 +1,4 @@
 const DeliveryPersonRating = require('../Models/DeliverPersonRating');
-const DeliverPersonRating = require('../Models/DeliverPersonRating');
 const User = require('../Models/User');
 
 // Function to add a rating
@@ -20,8 +19,8 @@ const addRating = async (req, res) => {
         }
 
         // Otherwise, create a new rating
-        const newRating = new Rating({
-            restaurant: restaurantId,
+        const newRating = new DeliveryPersonRating({
+            deliveryPersonId,
             user: userId, 
             rating,
             review
@@ -29,7 +28,7 @@ const addRating = async (req, res) => {
         await newRating.save();
 
         // Update the restaurant's average rating
-        await updateDeliveryPersonAverageRating(restaurantId);
+        await updateDeliveryPersonAverageRating(deliveryPersonId);
 
         return res.status(201).json({ message: 'Rating added successfully', rating: newRating });
     } catch (error) {
@@ -41,10 +40,13 @@ const addRating = async (req, res) => {
 // Function to calculate and update the restaurant's average rating
 const updateDeliveryPersonAverageRating = async (deliveryPersonId) => {
     const ratings = await DeliveryPersonRating.find({ deliveryPersonId: deliveryPersonId });
+    console.log(ratings)
     if (ratings.length === 0) return;
-
+    
     const totalRating = ratings.reduce((acc, rating) => acc + rating.rating, 0);
+    console.log(totalRating)
     const averageRating = totalRating / ratings.length;
+    console.log(averageRating)
 
     // Update the restaurant's average rating
     await User.findByIdAndUpdate(deliveryPersonId, { rating: averageRating });

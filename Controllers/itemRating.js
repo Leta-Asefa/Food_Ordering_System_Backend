@@ -53,7 +53,7 @@ const updateItemAverageRating = async (itemId) => {
 const getRatingsForItem = async (req, res) => {
     try {
         const { itemId } = req.params;
-        const ratings = await ItemRating.find({ item: itemId }).populate('user', 'name'); // Populate user name
+        const ratings = await ItemRating.find({ item: itemId }).populate('user', 'username'); // Populate user name
 
         return res.status(200).json(ratings);
     } catch (error) {
