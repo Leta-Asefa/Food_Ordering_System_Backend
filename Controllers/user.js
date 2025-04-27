@@ -64,7 +64,7 @@ const signup = async (req, res, next) => {
     return next(
       new AppError(
         `All these fields are required ( ${username ? "" : "username"}, ${
-          phoneNumber ? "" : "PHone Number"
+          phoneNumber ? "" : "Phone Number"
         } , ${password ? "" : "password"})`,
         400
       )
@@ -79,7 +79,13 @@ const signup = async (req, res, next) => {
     res.cookie("jwt", token, { httpOnly: true, secure: true });
     res.status(201).json({ username: createdUser.username, token });
   } catch (err) {
-    return next(err); // Error will be handled by the global error handler
+
+    if (err.code === 11000 && err.keyPattern?.phoneNumber) {
+      // This is a duplicate phone number error
+      return res.json({error: "Phone number already exists" });
+    }
+
+    console.error("Error creating user:", err);
   }
 };
 
@@ -115,6 +121,33 @@ const logout = (req, res, next) => {
   res.json({ status: "logged out successfully !" });
 };
 
+const forgotPassword = async (req, res, next) => {
+  const { phoneNumber, newPassword } = req.body;
+
+  console.log("Forgot Password Request:", phoneNumber, newPassword);
+
+  if (!phoneNumber || !newPassword) {
+    return next(
+      new AppError("Phone number and new password are required", 400)
+    );
+  }
+
+  try {
+    const user = await User.findOne({ phoneNumber });
+
+    if (!user) {
+      return next(new AppError("User not found with this phone number", 404));
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: "Password reset successfully" });
+  } catch (err) {
+    return next(err); // Let global error handler catch this
+  }
+};
+
 const changePassword = async (req, res, next) => {
   const { username, oldPassword, newPassword } = req.body;
   console.log("gotya !");
@@ -125,6 +158,8 @@ const changePassword = async (req, res, next) => {
       new AppError("Username, old password, and new password are required", 400)
     );
   }
+
+  
 
   try {
     const user = await User.login(username, oldPassword);
@@ -140,6 +175,7 @@ const changePassword = async (req, res, next) => {
     return next(err); // Error will be handled by the global error handler
   }
 };
+
 
 const updateUser = async (req, res, next) => {
   const { userId } = req.params; // Get user ID from URL
@@ -249,6 +285,7 @@ module.exports = {
   login,
   logout,
   changePassword,
+  forgotPassword,
   getByEmployer,
   updateUser,
   updateFavouriteRestaurant,

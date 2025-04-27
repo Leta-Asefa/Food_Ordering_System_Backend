@@ -79,7 +79,6 @@ const userSchema = new mongoose.Schema({
   },
   vehicle: {
     type: String,
-    required: true,
   },
   rating: {
     type: Number,

@@ -76,6 +76,9 @@ app.use('/gps', gpsRouter)
 const fcmRouter = require('./Routes/fcm.js');
 app.use('/fcm', fcmRouter)
 
+const twilioRouter = require('./Routes/twilio.js');
+app.use('/twilio', twilioRouter)
+
 
 const { chapaWebhook } = require('./Controllers/payment.js')
 app.use('/webhook/chapa', chapaWebhook)
