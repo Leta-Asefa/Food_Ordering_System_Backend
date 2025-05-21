@@ -30,7 +30,6 @@ const createOrder = async (req, res) => {
       shippingAddress,
       eta,
       restaurantId,
-      deliveryPersonId: userId, // just for the time being , future change
     });
 
     const savedOrder = await newOrder.save();
@@ -513,6 +512,8 @@ const sendOfferToDeliverPerson = async (req, res) => {
       orderId,
       "shippingAddress restaurantId eta userId"
     ).populate("restaurantId", "address");
+
+    console.log("Delivery Offer : ",order,deliveryPersonId,restaurantId);
 
     const deliveryPersonSocketId = socket_users[deliveryPersonId]?.socketId;
     const restaurantSocketId = socket_users[restaurantId]?.socketId;

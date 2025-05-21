@@ -17,7 +17,6 @@ const approve = async (req, res) => {
 
         // Update the isApproved property to true
         restaurant.isApproved = true;
-        restaurant.status='Normal'
 
         // Save the updated restaurant
         await restaurant.save();

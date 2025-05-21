@@ -9,14 +9,14 @@ router.post('/add',   createItem);
 router.get('/all',   getAllItems);
 
 // Get all food
-router.get('/food',   getAllFood);
+router.get('/food/:restaurantId',   getAllFood);
 
 // Get all drink
-router.get('/drink',   getAllDrink);
+router.get('/drink/:restaurantId',   getAllDrink);
 
 
 // Get all catering packages
-router.get('/catering',   getAllCatering);
+router.get('/catering/:restaurantId',   getAllCatering);
 
 router.get('/:restaurantId/menu',   getMenuByRestaurantId);
 // Get an item by ID

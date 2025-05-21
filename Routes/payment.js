@@ -11,7 +11,8 @@ const {
   getRefundRequests,
   declineRefundRequest,
   getRefundRequestsByUserId,
-  approveRefundRequest
+  approveRefundRequest,
+  initiateRefund
 } = require("../Controllers/payment");
 
 const router = express.Router();
@@ -41,6 +42,7 @@ router.post("/test", getPromotionPaymentPage);
 
 router.post("/getOrderPaymentPage", getOrderPaymentPage);
 
+router.post("/initiateRefund",initiateRefund)
 router.get("/refundRequests/restaurant/:restaurantId", getRefundRequests);
 router.get("/refundRequests/user/:userId", getRefundRequestsByUserId);
 router.get("/declineRefundRequest/:refundRequestId", declineRefundRequest);

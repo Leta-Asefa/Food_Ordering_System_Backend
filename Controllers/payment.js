@@ -180,14 +180,16 @@ const getOrderPaymentPage = async (req, res) => {
     restaurantId,
   } = req.body;
 
-  console.log(orderId, userId);
+  console.log("pay now ", req.body);
   const order = await Order.findById(orderId);
+  console.log("response", order);
+
   if (!order) return res.json({ error: "No order is found !" });
 
   if (!order.checkout_url) {
     const tx_ref = await chapa.genTxRef();
     const response = await chapa.initialize({
-      phone_number: phoneNumber,
+      phone_number: "0" + phoneNumber,
       first_name: firstName,
       amount: amount,
       currency: "ETB",
@@ -203,19 +205,20 @@ const getOrderPaymentPage = async (req, res) => {
         restaurantId,
       },
     });
-
     if (response.status === "success") {
       order.checkout_url = response.data.checkout_url;
       await order.save();
       res.status(201).json({ checkout_url: response.data.checkout_url });
-    } else {
-      res.status(201).json({ checkout_url: order.checkout_url });
+      return;
     }
   } else {
-    res
-      .status(400)
-      .json({ error: "make sure that you entered all the required fields " });
+    res.status(201).json({ checkout_url: order.checkout_url });
+    return;
   }
+
+  res
+    .status(400)
+    .json({ error: "make sure that you entered all the required fields " });
 };
 
 const generateTransactionReference = async (
@@ -257,7 +260,7 @@ const chapaWebhook = async (req, res) => {
     type,
     refundRequestId,
     subscriptionId,
-  } = req.body.meta;
+  } = req.body.meta || {};
 
   const hash = crypto
     .createHmac("sha256", process.env.CHAPA_WEBHOOK_SECRET_KEY)
@@ -314,49 +317,53 @@ const chapaWebhook = async (req, res) => {
           }
         );
 
-        console.log("refund response", response.data);
 
         if (response.data.data.status === "initiated") {
           refund.status = "Initiated";
           refund.tx_ref = req.body.tx_ref;
           await refund.save();
-          order.status = "Cancelled";
+          order.status = "Refunded";
           await order.save();
 
           console.log("refund request is initiated");
+          try {
+            const token = await getFcmToken(order.userId);
+            const message = {
+              token, // User's FCM token
+              notification: {
+                title: "Let's Eat Delivery",
+                body: "Your refund request has been initiated. It takes 3-5 days to be processed",
+              },
+              data: {
+                customData: "custom data value",
+              },
+            };
 
-          const token = await getFcmToken(order.userId);
-          const message = {
-            token, // User's FCM token
-            notification: {
-              title: "Let's Eat Delivery",
-              body: "Your refund request has been initiated.",
-            },
-            data: {
-              customData: "custom data value",
-            },
-          };
-
-          messaging.send(message);
+            messaging.send(message);
+          } catch (error) {
+            console.log(
+              "error in sending fcm token/ user is not online",
+              error
+            );
+          }
         }
       } catch (error) {
         console.log(error);
       }
     } else if (type === "subscription" && req.body.status === "success") {
-
       const now = new Date();
       const nextMonth = new Date();
       nextMonth.setMonth(now.getMonth() + 1);
 
-   const    subscription = new Subscription({
+      const subscription = new Subscription({
         restaurantId,
         startDate: now,
-        amount:process.env.SUBSCRIPTION_PRICE,
+        amount: process.env.SUBSCRIPTION_PRICE,
         endDate: nextMonth,
         status: "Paid",
       });
       const restaurant = await Restaurant.findById(restaurantId);
-      restaurant.status = "Normal";
+      restaurant.status = "Active";
       await subscription.save();
       await restaurant.save();
     } else if (req.body.status === "refunded") {
@@ -428,19 +435,22 @@ const declineRefundRequest = async (req, res) => {
     const refund = await Refund.findById(refundRequestId);
     refund.status = "Declined";
     await refund.save();
-
-    const token = await getFcmToken(refund.userId);
-    const message = {
-      token, // User's FCM token
-      notification: {
-        title: "Let's Eat Delivery",
-        body: "Your refund request has been declined",
-      },
-      data: {
-        customData: "custom data value",
-      },
-    };
-    messaging.send(message);
+    try {
+      const token = await getFcmToken(refund.userId);
+      const message = {
+        token, // User's FCM token
+        notification: {
+          title: "Let's Eat Delivery",
+          body: "Your refund request has been declined",
+        },
+        data: {
+          customData: "custom data value",
+        },
+      };
+      messaging.send(message);
+    } catch (error) {
+      console.log("error in sending fcm token/ user is not online", error);
+    }
 
     return res.json({ message: "Refund Request is declined successfully ! " });
   } catch (error) {
@@ -481,7 +491,32 @@ const approveRefundRequest = async (req, res) => {
     message: "Refund is Not Initialized. Please  Try again later ! ",
   });
 };
+const initiateRefund = async (req, res) => {
+  const { userId, restaurantId, orderId, amount, reason, tx_ref, location } = req.body;
 
+  if (!userId || !restaurantId || !orderId || !amount || !reason) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  try {
+    const refund = new Refund({
+      userId,
+      restaurantId,
+      orderId,
+      amount,
+      reason,
+      tx_ref,
+      location,
+    });
+
+    const savedRefund = await refund.save();
+    console.log("Refund request created:", savedRefund);
+    res.status(201).json({ message: "Refund request created", refund: savedRefund });
+  } catch (error) {
+    console.error("Error creating refund:", error);
+    res.status(500).json({ message: "Error creating refund", error: error.message });
+  }
+};
 module.exports = {
   createPayment,
   getPaymentById,
@@ -497,4 +532,5 @@ module.exports = {
   declineRefundRequest,
   getRefundRequestsByUserId,
   approveRefundRequest,
+  initiateRefund
 };

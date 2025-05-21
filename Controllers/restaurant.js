@@ -530,6 +530,9 @@ const updateRestaurant = async (req, res) => {
     pictures,
     _id,
   } = req.body; // Allowed fields to update
+  
+  console.log("update restaurant", req.body);
+    
   if (!_id) {
     return next(new AppError("User ID is required", 400));
   }
@@ -563,6 +566,7 @@ const updateRestaurant = async (req, res) => {
 const updateRestaurantBankInformation = async (req, res) => {
   const { id } = req.params;
   const { bankName, bankAccountName, bankAccountNumber } = req.body;
+  console.log('bank info', req.body);
   const bankCode = await getBankIdByName(bankName);
   let subAccountId = null;
   try {
@@ -635,7 +639,6 @@ const getBankIdByName = async (bankName) => {
       "Error fetching banks:",
       error.response ? error.response.data : error.message
     );
-    throw error;
   }
 };
 
@@ -730,6 +733,7 @@ const getFavoriteRestaurantsByUserId = async (req, res) => {
 
 const login = async (req, res) => {
   const { phoneNumber, password } = req.body;
+  console.log("login restaurant hit",phoneNumber, password);
   try {
     const restaurant = await Restaurant.login(phoneNumber, password);
     const token = createToken(restaurant._id);
@@ -741,6 +745,13 @@ const login = async (req, res) => {
     res.json({ error: err.message });
   }
 };
+const logout = (req, res,) => {
+  console.log("logout restaurant hit");
+  res.cookie("jwt", "");
+  res.json({ status: "logged out successfully !" });
+};
+
+
 
 module.exports = {
   createRestaurant,
@@ -757,6 +768,7 @@ module.exports = {
   searchByKeyWord,
   getFavoriteRestaurantsByUserId,
   login,
+  logout,
   getAdminDashboardSummary,
   getSuperAdminDashboardSummary,
   getInactiveRestaurants,

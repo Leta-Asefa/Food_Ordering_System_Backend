@@ -114,6 +114,7 @@ restaurantSchema.methods.comparePassword = async function (enteredPassword) {
 //for login
 restaurantSchema.statics.login = async function(phoneNumber, password) {
     const restaurant = await this.findOne({ contact:phoneNumber })
+    console.log("restaurant found ",restaurant)
     if (restaurant) {
         if ( await bcrypt.compare(password, restaurant.password)) {
             return restaurant

@@ -116,7 +116,7 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 //for login
 userSchema.statics.login = async function (username, password) {
   const user = await this.findOne({ username });
-
+console.log("user ",user,username,password)
   if (user) {
     if (await bcrypt.compare(password, user.password)) {
       return user;

@@ -58,7 +58,7 @@ const getByEmployer = async (req, res, next) => {
 };
 
 const signup = async (req, res, next) => {
-  const { username, phoneNumber, password } = req.body;
+  const { username, phoneNumber, password,role } = req.body;
 
   if (!username || !phoneNumber || !password) {
     return next(
@@ -72,7 +72,7 @@ const signup = async (req, res, next) => {
   }
 
   try {
-    const user = new User({ username, phoneNumber, password });
+    const user = new User({ username, phoneNumber, password,role,employer:'us' });
     const createdUser = await user.save();
     const token = createToken(createdUser._id);
 
@@ -186,6 +186,7 @@ const updateUser = async (req, res, next) => {
     image,
     isActive,
     commonDeliveryLocations,
+    employer,
   } = req.body; // Allowed fields to update
   if (!userId) {
     return next(new AppError("User ID is required", 400));
@@ -200,6 +201,7 @@ const updateUser = async (req, res, next) => {
     // Update only provided fields
     if (isActive !== undefined) user.isActive = isActive;
     if (username) user.username = username;
+    if (employer) user.employer = employer;
     if (phoneNumber) user.phoneNumber = phoneNumber;
     if (vehicle) user.vehicle = vehicle;
     if (image) user.image = image;

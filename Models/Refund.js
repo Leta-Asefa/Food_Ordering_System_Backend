@@ -32,7 +32,8 @@ const refundSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Refunded', 'Declined','Requested','Initiated'],
+        enum: ['Refunded', 'Declined','Requested','Initiated','Requested'],
+        default:'Requested'
     },
     createdAt: {
         type: Date,

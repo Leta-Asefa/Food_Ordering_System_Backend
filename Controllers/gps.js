@@ -14,6 +14,8 @@ const updateLocation = async (req, res) => {
     rating,
   } = req.body;
 
+  console.log("Update Location ", req.body);
+
   if (
     !userId ||
     typeof latitude === "undefined" ||
@@ -46,15 +48,15 @@ const updateLocation = async (req, res) => {
       "HSET",
       `delivery_person_info:${userId}`,
       "username",
-      username,
+      username ?? "",
       "phoneNumber",
-      phoneNumber,
+      phoneNumber ?? "",
       "image",
-      image,
+      image ?? "",
       "employer",
-      employer,
+      employer ?? "",
       "rating",
-      rating.toString(),
+      rating !== undefined && rating !== null ? rating.toString() : "0",
     ]);
 
     console.log(response2);
@@ -110,6 +112,7 @@ const getAllLocations = async (req, res) => {
 };
 
 const getNearbyDeliveryPeople = async (req, res) => {
+  console.log("Entering get nearby delivery people");
   try {
     const { longitude, latitude } = req.params; // Use query params instead of params
 
@@ -159,7 +162,7 @@ const getNearbyDeliveryPeople = async (req, res) => {
       longitude: driver[1][0],
       latitude: driver[1][1],
     }));
-
+    let userInfoBackup = {};
     // Fetch distance from HERE Maps API
     const distancePromises = deliveryPeople.map(async (driver) => {
       try {
@@ -172,11 +175,10 @@ const getNearbyDeliveryPeople = async (req, res) => {
         for (let i = 0; i < userInfoArray.length; i += 2) {
           userInfo[userInfoArray[i]] = userInfoArray[i + 1];
         }
-
+        userInfoBackup = {...userInfo,userId:driver.userId}; // if the rate limting is reached, we can use this data
         const requestUrl = `https://router.hereapi.com/v8/routes?apiKey=${process.env.HERE_MAP_API_KEY}&origin=${latitude},${longitude}&destination=${driver.latitude},${driver.longitude}&transportMode=car&return=summary`;
         const response = await axios.get(requestUrl);
         const summary = response.data.routes[0].sections[0].summary;
-
         return {
           ...driver,
           distance: (summary.length / 1000).toFixed(2) + " km",
@@ -190,9 +192,9 @@ const getNearbyDeliveryPeople = async (req, res) => {
           rating: userInfo.rating,
         };
       } catch (error) {
-        // console.error("HERE API error:", error);
+        console.error("HERE API error:", error);
         return {
-          ...driver,
+          ...userInfoBackup,
           distance: "N/A",
           duration: "N/A",
           distanceValue: Infinity,
@@ -202,7 +204,6 @@ const getNearbyDeliveryPeople = async (req, res) => {
 
     // Wait for all API requests to finish
     const driversWithDistances = await Promise.all(distancePromises);
-    console.log(driversWithDistances);
 
     // Sort by actual route distance
     const sortedDrivers = driversWithDistances.sort(
@@ -230,7 +231,7 @@ const realTimeUpdate = async (req, res) => {
 };
 
 const deliveryRoute = async (req, res) => {
-    console.log("Entering deliver route /n--------------------------/n");
+  console.log("Entering deliver route /n--------------------------/n");
   const {
     deliveryPersonLatitude,
     deliveryPersonLongitude,
@@ -239,7 +240,8 @@ const deliveryRoute = async (req, res) => {
     destinationLatitude,
     destinationLongitude,
   } = req.params;
-  console.log("delivery  route  ", 
+  console.log(
+    "delivery  route  ",
     deliveryPersonLatitude,
     deliveryPersonLongitude,
     restaurantLatitude,
@@ -248,7 +250,7 @@ const deliveryRoute = async (req, res) => {
     destinationLongitude
   );
   res.json({
-    routeCoordinates:[
+    routeCoordinates: [
       { latitude: 11.59738, longitude: 37.39493 },
       { latitude: 11.5974, longitude: 37.39486 },
       { latitude: 11.59741, longitude: 37.39475 },
@@ -317,12 +319,11 @@ const deliveryRoute = async (req, res) => {
       { latitude: 11.59545, longitude: 37.39047 },
       { latitude: 11.59538, longitude: 37.39042 },
       { latitude: 11.59531, longitude: 37.39037 },
-      { latitude: 11.59524, longitude: 37.39032 }
-    ]
-    ,
-      userLocation: { latitude: 11.59781, longitude: 37.39336 },
-      destination:{ latitude: 11.59561, longitude: 37.39392 },
-      restaurantLocation:{ latitude: 11.59741, longitude: 37.39349 }
+      { latitude: 11.59524, longitude: 37.39032 },
+    ],
+    userLocation: { latitude: 11.59738, longitude: 37.39493 },
+    destination: { latitude: 11.59524, longitude: 37.39032 },
+    restaurantLocation: { latitude: 11.59655, longitude: 37.39127 },
   });
 };
 
