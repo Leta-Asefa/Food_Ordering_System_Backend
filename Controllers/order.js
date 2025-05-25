@@ -33,10 +33,18 @@ const createOrder = async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
+    const populatedOrder = await Order.findById(savedOrder._id)
+      .populate("userId", "name nationalId phoneNumber username")
+      .populate("items.item", "name price")
+      .populate("deliveryPersonId", "username phoneNumber image")
+      .populate("payment", "status paymentDate amount paymentMethod");
     const new_order_history = await getNewOrderHistory(userId);
-    const customerSocketId=socket_users[userId].socketId
-    console.log("customer socket id ",customerSocketId);
+    const customerSocketId = socket_users[userId].socketId;
+    console.log("customer socket id ", customerSocketId);
     io.to(customerSocketId).emit("order_history_updated", new_order_history);
+    const restaurantSocketId = socket_users[restaurantId].socketId;
+    console.log("restaurant socket id ", restaurantSocketId);
+    io.to(restaurantSocketId).emit("new_order_added", populatedOrder);
 
     const token = await getFcmToken(userId);
     const message = {
@@ -46,7 +54,6 @@ const createOrder = async (req, res) => {
         body: "Your order was placed! Cooking starts after you pay. Thanks for choosing Let's Eat Delivery!",
         image:
           "https://static.vecteezy.com/system/resources/previews/019/796/973/non_2x/motorbike-delivery-man-logo-icon-symbol-template-free-vector.jpg",
-
       },
       data: {
         customData: "custom data value",
@@ -54,7 +61,7 @@ const createOrder = async (req, res) => {
     };
 
     messaging.send(message);
-    
+
     res.status(201).json({
       message: "Order created successfully !",
       orderId: savedOrder._id,
@@ -261,24 +268,22 @@ const getOrderTrackingRoutes = async (req, res) => {
     console.log("Request received for optimized route !");
 
     res.json({
-      routeCoordinates : [
-        { latitude: 9.0200, longitude: 38.7900 }, // Megenagna
-        { latitude: 9.0185, longitude: 38.7850 },
-        { latitude: 9.0160, longitude: 38.7800 },
-        { latitude: 9.0140, longitude: 38.7750 },
-        { latitude: 9.0120, longitude: 38.7700 },
-        { latitude: 9.0100, longitude: 38.7650 },
-        { latitude: 9.0080, longitude: 38.7600 },
-        { latitude: 9.0060, longitude: 38.7550 },
-        { latitude: 9.0040, longitude: 38.7500 },
-        { latitude: 9.0020, longitude: 38.7450 },
-        { latitude: 9.0000, longitude: 38.7400 }, // Meskel Square
+      routeCoordinates: [
+        { latitude: 9.02, longitude: 38.79 }, // Megenagna
+        { latitude: 9.0185, longitude: 38.785 },
+        { latitude: 9.016, longitude: 38.78 },
+        { latitude: 9.014, longitude: 38.775 },
+        { latitude: 9.012, longitude: 38.77 },
+        { latitude: 9.01, longitude: 38.765 },
+        { latitude: 9.008, longitude: 38.76 },
+        { latitude: 9.006, longitude: 38.755 },
+        { latitude: 9.004, longitude: 38.75 },
+        { latitude: 9.002, longitude: 38.745 },
+        { latitude: 9.0, longitude: 38.74 }, // Meskel Square
       ],
-      userLocation: { latitude: 9.0200, longitude: 38.7900 },
-      destination: { latitude: 9.0000, longitude: 38.7400 },
+      userLocation: { latitude: 9.02, longitude: 38.79 },
+      destination: { latitude: 9.0, longitude: 38.74 },
     });
-    
-    
   } catch (error) {
     console.log(error);
   }
@@ -298,9 +303,9 @@ const getDeliveryPersonOrder = async (req, res) => {
     const order = await Order.findById(
       user.assignedOrder,
       "eta userId restaurantId status shippingAddress"
-    ).populate("userId", "nationalId phoneNumber username")
-   .populate("restaurantId", "name location");
-
+    )
+      .populate("userId", "nationalId phoneNumber username")
+      .populate("restaurantId", "name location");
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -336,6 +341,7 @@ const getDeliveryHistory = async (req, res) => {
 
 // Function to get Orders by status
 const getByStatus = async (req, res) => {
+  console.log("get by status is called ", req.params);
   try {
     const { id } = req.params;
     const { status } = req.params;
@@ -354,17 +360,15 @@ const getByStatus = async (req, res) => {
       .populate("deliveryPersonId", "username phoneNumber image")
       .populate("payment", "status paymentDate amount paymentMethod");
 
+    console.log(orders);
     // Filter orders by status or payment status
-    const filteredOrders = orders.filter(
-      (order) =>
-        order.status === status ||
-        (order.payment && order.payment.status === status)
-    );
+    const filteredOrders = orders.filter((order) => order.status === status);
 
     if (!filteredOrders) {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    console.log(filteredOrders);
     res.status(200).json(filteredOrders);
   } catch (error) {
     console.error(error);
@@ -417,8 +421,9 @@ const updateDeliveryPerson = async (req, res) => {
     const order = await Order.findById(
       orderId,
       "eta userId restaurantId status shippingAddress deliveryPersonId"
-    ).populate("userId", "nationalId phoneNumber username")
-    .populate("restaurantId", "name location");
+    )
+      .populate("userId", "nationalId phoneNumber username")
+      .populate("restaurantId", "name location");
 
     const user = await User.findById(deliveryPersonId);
 
@@ -513,7 +518,7 @@ const sendOfferToDeliverPerson = async (req, res) => {
       "shippingAddress restaurantId eta userId"
     ).populate("restaurantId", "address");
 
-    console.log("Delivery Offer : ",order,deliveryPersonId,restaurantId);
+    console.log("Delivery Offer : ", order, deliveryPersonId, restaurantId);
 
     const deliveryPersonSocketId = socket_users[deliveryPersonId]?.socketId;
     const restaurantSocketId = socket_users[restaurantId]?.socketId;
@@ -534,10 +539,8 @@ const sendOfferToDeliverPerson = async (req, res) => {
       pickupLocation: order.restaurantId.address,
       deliveryLocation: order.shippingAddress.address,
       eta: order.eta,
-      userId:order.userId
+      userId: order.userId,
     });
-
-   
 
     res.json({ message: "Notification is sent" });
   } catch (error) {
@@ -579,21 +582,21 @@ const getOptimizedRoute = async (req, res) => {
   try {
     console.log("Optimized Route Request Accepted !");
     res.json({
-      routeCoordinates:[
-        { latitude: 9.0200, longitude: 38.7900 }, // Megenagna
-        { latitude: 9.0185, longitude: 38.7850 },
-        { latitude: 9.0160, longitude: 38.7800 },
-        { latitude: 9.0140, longitude: 38.7750 },
-        { latitude: 9.0120, longitude: 38.7700 },
-        { latitude: 9.0100, longitude: 38.7650 },
-        { latitude: 9.0080, longitude: 38.7600 },
-        { latitude: 9.0060, longitude: 38.7550 },
-        { latitude: 9.0040, longitude: 38.7500 },
-        { latitude: 9.0020, longitude: 38.7450 },
-        { latitude: 9.0000, longitude: 38.7400 }, // Meskel Square
+      routeCoordinates: [
+        { latitude: 9.02, longitude: 38.79 }, // Megenagna
+        { latitude: 9.0185, longitude: 38.785 },
+        { latitude: 9.016, longitude: 38.78 },
+        { latitude: 9.014, longitude: 38.775 },
+        { latitude: 9.012, longitude: 38.77 },
+        { latitude: 9.01, longitude: 38.765 },
+        { latitude: 9.008, longitude: 38.76 },
+        { latitude: 9.006, longitude: 38.755 },
+        { latitude: 9.004, longitude: 38.75 },
+        { latitude: 9.002, longitude: 38.745 },
+        { latitude: 9.0, longitude: 38.74 }, // Meskel Square
       ],
-      userLocation: { latitude: 9.0200, longitude: 38.7900 },
-      destination: { latitude: 9.0000, longitude: 38.7400 },
+      userLocation: { latitude: 9.02, longitude: 38.79 },
+      destination: { latitude: 9.0, longitude: 38.74 },
     });
   } catch (error) {
     console.error(error);

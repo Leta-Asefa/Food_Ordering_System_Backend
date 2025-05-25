@@ -85,7 +85,7 @@ exports.getCheckoutUrl = async (req, res) => {
 
   try {
     const response = await chapa.initialize({
-      phone_number: "0987654321",
+      phone_number: phoneNumber,
       first_name: name,
       amount: process.env.SUBSCRIPTION_PRICE,
       currency: "ETB",

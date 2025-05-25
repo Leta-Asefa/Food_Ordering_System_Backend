@@ -271,7 +271,12 @@ const chapaWebhook = async (req, res) => {
     // we know it is from the right source
 
     if (type === "order" && req.body.status === "success") {
-      const order = await Order.findById(orderId);
+      const order = await Order.findById(orderId)
+        .populate("userId", "name nationalId phoneNumber username")
+        .populate("items.item", "name price")
+        .populate("deliveryPersonId", "username phoneNumber image")
+        .populate("payment", "status paymentDate amount paymentMethod");
+
       if (order.status === "Processing") return; // as chapa my send the same webhook request multiple times
       order.tx_ref = req.body.reference;
       order.status = "Processing";
@@ -295,7 +300,11 @@ const chapaWebhook = async (req, res) => {
             orderId +
             " is being processed. It will be on transit soon. Thank you for your patience !",
         });
-      console.log("io sent");
+      const restaurantSocketId = socket_users[order.restaurantId]?.socketId;
+      if (restaurantSocketId)
+        io.to(restaurantSocketId).emit("order_status_update", order);
+      console.log("io sent ressockId", restaurantSocketId, userSocketId, order);
+
       return;
     } else if (type === "refund" && req.body.status === "success") {
       try {
@@ -317,7 +326,6 @@ const chapaWebhook = async (req, res) => {
           }
         );
 
-
         if (response.data.data.status === "initiated") {
           refund.status = "Initiated";
           refund.tx_ref = req.body.tx_ref;
@@ -326,26 +334,10 @@ const chapaWebhook = async (req, res) => {
           await order.save();
 
           console.log("refund request is initiated");
-          try {
-            const token = await getFcmToken(order.userId);
-            const message = {
-              token, // User's FCM token
-              notification: {
-                title: "Let's Eat Delivery",
-                body: "Your refund request has been initiated. It takes 3-5 days to be processed",
-              },
-              data: {
-                customData: "custom data value",
-              },
-            };
-
-            messaging.send(message);
-          } catch (error) {
-            console.log(
-              "error in sending fcm token/ user is not online",
-              error
-            );
-          }
+          sendNotification(
+            order.userId,
+            "Your refund request has been initiated. It takes 3-5 days to be processed"
+          );
         }
       } catch (error) {
         console.log(error);
@@ -362,10 +354,15 @@ const chapaWebhook = async (req, res) => {
         endDate: nextMonth,
         status: "Paid",
       });
-      const restaurant = await Restaurant.findById(restaurantId);
-      restaurant.status = "Active";
-      await subscription.save();
-      await restaurant.save();
+
+      try {
+        const restaurant = await Restaurant.findById(restaurantId);
+        restaurant.status = "Active";
+        await subscription.save();
+        await restaurant.save();
+      } catch (error) {
+        console.log("error in saving subscription ", error);
+      }
     } else if (req.body.status === "refunded") {
       const order = await Order.find({ tx_ref: req.body.tx_ref });
       order.status = "Cancelled";
@@ -373,6 +370,10 @@ const chapaWebhook = async (req, res) => {
       const refund = await Refund.find({ tx_ref: req.body.tx_ref });
       refund.status = "Refunded";
       await refund.save();
+      sendNotification(
+        order.userId,
+        "Your order has been refunded successfully !"
+      );
     } else {
       activatePromotion(req, res);
       return;
@@ -492,7 +493,8 @@ const approveRefundRequest = async (req, res) => {
   });
 };
 const initiateRefund = async (req, res) => {
-  const { userId, restaurantId, orderId, amount, reason, tx_ref, location } = req.body;
+  const { userId, restaurantId, orderId, amount, reason, tx_ref, location } =
+    req.body;
 
   if (!userId || !restaurantId || !orderId || !amount || !reason) {
     return res.status(400).json({ message: "Missing required fields" });
@@ -511,10 +513,34 @@ const initiateRefund = async (req, res) => {
 
     const savedRefund = await refund.save();
     console.log("Refund request created:", savedRefund);
-    res.status(201).json({ message: "Refund request created", refund: savedRefund });
+    res
+      .status(201)
+      .json({ message: "Refund request created", refund: savedRefund });
   } catch (error) {
     console.error("Error creating refund:", error);
-    res.status(500).json({ message: "Error creating refund", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error creating refund", error: error.message });
+  }
+};
+
+const sendNotification = async (userId, messageBody) => {
+  try {
+    const token = await getFcmToken(userId);
+    const message = {
+      token, // User's FCM token
+      notification: {
+        title: "Let's Eat Delivery",
+        body: messageBody,
+      },
+      data: {
+        customData: "custom data value",
+      },
+    };
+
+    messaging.send(message);
+  } catch (error) {
+    console.log("error in sending fcm token/ user is not online", error);
   }
 };
 module.exports = {
@@ -532,5 +558,5 @@ module.exports = {
   declineRefundRequest,
   getRefundRequestsByUserId,
   approveRefundRequest,
-  initiateRefund
+  initiateRefund,
 };

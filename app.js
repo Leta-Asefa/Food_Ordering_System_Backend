@@ -26,7 +26,7 @@ app.use(mongoSanitize());
 app.use(express.json({ limit: '500mb' }));
 app.use(cookieParser())
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8081'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8081','undefined'],
   credentials: true // Allow credentials (cookies) to be sent
 }));
 

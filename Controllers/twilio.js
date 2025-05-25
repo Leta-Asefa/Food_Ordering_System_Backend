@@ -13,11 +13,11 @@ const sendOtp = async (req, res) => {
 console.log(process.env.TWILIO_PHONE_NUMBER)
 
     // Send OTP via Twilio SMS
-    // await client.messages.create({
-    //   body: `Your OTP is to verify you Food Delivery App account is  ${otp}. It is only valid for 30 minutes.`,
-    //   from: process.env.TWILIO_PHONE_NUMBER, // Your Twilio phone number
-    //   to: phoneNumber,
-    // });
+    await client.messages.create({
+      body: `Your OTP  to verify your Food Delivery App account is  ${otp}. It is only valid for 30 minutes.`,
+      from: process.env.TWILIO_PHONE_NUMBER, // Your Twilio phone number
+      to: phoneNumber,
+    });
 
     // Store OTP in Redis with expiration (30 minutes = 1800 seconds)
     await redisClient.sendCommand([

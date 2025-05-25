@@ -72,7 +72,7 @@ const signup = async (req, res, next) => {
   }
 
   try {
-    const user = new User({ username, phoneNumber, password,role,employer:'us' });
+    const user = new User({ username, phoneNumber, password,role,employer:'us',status:'Unapproved' });
     const createdUser = await user.save();
     const token = createToken(createdUser._id);
 
@@ -262,7 +262,7 @@ const updateFavouriteRestaurant = async (req, res, next) => {
 
 const getAllDeliveryPeople = async (req, res) => {
   try {
-    const deliveryPeople = await User.find({ role: 'delivery' }).select('-password');
+    const deliveryPeople = await User.find({ role: 'delivery',status:"Approved" }).select('-password');
     res.status(200).json(deliveryPeople);
   } catch (error) {
     console.error('Error fetching delivery people:', error);
