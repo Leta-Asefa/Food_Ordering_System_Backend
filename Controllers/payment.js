@@ -154,12 +154,15 @@ const getPaymentsByDateRange = async (req, res) => {
 
 const getPromotionPaymentPage = async (req, res) => {
   const { phoneNumber, amount, firstName, promotionId } = req.body;
+  console.log(req.body)
+try{
   const response = await generateTransactionReference(
     phoneNumber,
     amount,
     firstName,
     promotionId
   );
+
   if (response.status === "success") {
     res.status(201).json({ checkout_url: response.data.checkout_url });
   } else {
@@ -167,6 +170,10 @@ const getPromotionPaymentPage = async (req, res) => {
       .status(400)
       .json({ error: "make sure that you entered all the required fields " });
   }
+
+}catch(error){
+console.log("error in generating transaction reference for promotion payment", error);
+}
 };
 
 const getOrderPaymentPage = async (req, res) => {
@@ -304,7 +311,10 @@ const chapaWebhook = async (req, res) => {
       if (restaurantSocketId)
         io.to(restaurantSocketId).emit("order_status_update", order);
       console.log("io sent ressockId", restaurantSocketId, userSocketId, order);
-
+      sendNotification(
+        order.userId,
+        "Your order is under processing. It will be on transit soon. Thank you for your patience !"
+      );
       return;
     } else if (type === "refund" && req.body.status === "success") {
       try {
@@ -559,4 +569,5 @@ module.exports = {
   getRefundRequestsByUserId,
   approveRefundRequest,
   initiateRefund,
+  sendNotification
 };

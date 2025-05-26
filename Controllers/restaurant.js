@@ -515,9 +515,10 @@ const getRestaurantPicturesById = async (req, res, next) => {
 };
 
 // Update a restaurant by ID
-const updateRestaurant = async (req, res) => {
+const updateRestaurant = async (req, res,next) => {
   const {
     location,
+    contact,
     name,
     address,
     isApproved,
@@ -551,6 +552,8 @@ const updateRestaurant = async (req, res) => {
     if (image) restaurant.image = image;
     if (priceRange) restaurant.priceRange = priceRange;
     if (pictures) restaurant.pictures = pictures;
+    if (pictures) restaurant.pictures = pictures;
+    if (contact) restaurant.contact = contact;
 
     await restaurant.save();
 
@@ -558,7 +561,25 @@ const updateRestaurant = async (req, res) => {
 
     res.json({ message: "Restaurant updated successfully" });
   } catch (err) {
-    return next(err); // Handle error globally
+   console.log("update restaurant error", err);
+   
+  // Check top-level error
+  if (err.code === 11000 && err.keyPattern?.contact) {
+    return res.json({ error: "Phone number already exists" });
+  }
+
+  // Check nested errorResponse (MongoDB driver)
+  if (err.errorResponse?.code === 11000 && err.errorResponse?.keyPattern?.contact) {
+    return res.json({ error: "Phone number already exists" });
+  }
+
+  // Check nested cause (Mongoose 7+)
+  if (err.cause?.code === 11000 && err.cause?.keyPattern?.contact) {
+    return res.json({ error: "Phone number already exists" });
+  }
+
+  // Fallback: generic error
+  return res.status(500).json({ error: err.message || "Server error" })
   }
 };
 
@@ -667,6 +688,7 @@ const searchByKeyWord = async (req, res, next) => {
   } catch (error) {
     next(new AppError("Internal Problem", 500)); // Ensure next() is available
   }
+  
 };
 
 // Delete a restaurant by ID

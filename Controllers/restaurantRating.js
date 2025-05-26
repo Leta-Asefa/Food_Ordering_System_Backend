@@ -53,7 +53,7 @@ const updateRestaurantAverageRating = async (restaurantId) => {
 const getRatingsForRestaurant = async (req, res) => {
     try {
         const { restaurantId } = req.params;
-        const ratings = await Rating.find({ restaurant: restaurantId }).populate('user', 'username'); // Populate user name
+        const ratings = await Rating.find({ restaurant: restaurantId }).populate('user', 'username image'); // Populate user name
 
         return res.status(200).json(ratings);
     } catch (error) {
