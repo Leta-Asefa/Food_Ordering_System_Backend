@@ -285,7 +285,7 @@ const getAllDeliveryPeople = async (req, res) => {
 
 const getAllUnapprovedPeople = async (req, res) => {
   try {
-    const deliveryPeople = await User.find({ status: 'Unapproved' }).select('-password');
+    const deliveryPeople = await User.find({ status: 'Unapproved',role:'delivery' }).select('-password');
     res.status(200).json(deliveryPeople);
   } catch (error) {
     console.error('Error fetching delivery people:', error);
