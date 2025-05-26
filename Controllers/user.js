@@ -77,12 +77,16 @@ const signup = async (req, res, next) => {
     const token = createToken(createdUser._id);
 
     res.cookie("jwt", token, { httpOnly: true, secure: true });
-    res.status(201).json({ username: createdUser.username, token });
+    res.status(201).json({ user: createdUser, token });
   } catch (err) {
 
     if (err.code === 11000 && err.keyPattern?.phoneNumber) {
       // This is a duplicate phone number error
       return res.json({error: "Phone number already exists" });
+    }
+    if (err.code === 11000 && err.keyPattern?.username) {
+      // This is a duplicate phone number error
+      return res.json({error: "Username  already exists" });
     }
 
     console.error("Error creating user:", err);
@@ -97,7 +101,7 @@ const login = async (req, res, next) => {
   }
 
   try {
-    const user = await User.login(username, password);
+    const user = await User.login(username, password,res);
     if (!user) {
       return next(new AppError("Invalid username or password", 401));
     }
@@ -214,6 +218,15 @@ const updateUser = async (req, res, next) => {
 
     res.json({ message: "User updated successfully", isActive: user.isActive });
   } catch (err) {
+    console.error("Error updating user:", err);
+    if (err.code === 11000 && err.keyPattern?.phoneNumber) {
+      // This is a duplicate phone number error
+      return res.json({error: "Phone number already exists" });
+    }
+    if (err.code === 11000 && err.keyPattern?.username) {
+      // This is a duplicate phone number error
+      return res.json({error: "Username  already exists" });
+    }
     return next(err); // Handle error globally
   }
 };

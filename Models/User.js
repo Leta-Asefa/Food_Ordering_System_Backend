@@ -114,16 +114,17 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 };
 
 //for login
-userSchema.statics.login = async function (username, password) {
+userSchema.statics.login = async function (username, password,res) {
   const user = await this.findOne({ username });
 console.log("user ",user,username,password)
   if (user) {
     if (await bcrypt.compare(password, user.password)) {
       return user;
     }
-    throw Error("password is not correct");
+   res.json({error: "password is not correct" });
+   return
   }
-  throw Error("username is not registered");
+  res.json({error: "username is not registered" });
 };
 
 // Create the User model
