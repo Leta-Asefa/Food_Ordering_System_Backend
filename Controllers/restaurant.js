@@ -415,15 +415,13 @@ const getEstimatedTimeOfArrival = async (req, res) => {
       response.data.routes[0].sections[0].summary.length / 1000
     ).toFixed(2);
 
-    res
-      .status(200)
-      .json({
-        durationValue: eta,
-        distanceValue,
-        duration: `${eta} Min`,
-        distance: `${distanceValue} Km`,
-        restaurant,
-      });
+    res.status(200).json({
+      durationValue: eta,
+      distanceValue,
+      duration: `${eta} Min`,
+      distance: `${distanceValue} Km`,
+      restaurant,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Error fetching restaurants", error });
@@ -515,7 +513,7 @@ const getRestaurantPicturesById = async (req, res, next) => {
 };
 
 // Update a restaurant by ID
-const updateRestaurant = async (req, res,next) => {
+const updateRestaurant = async (req, res, next) => {
   const {
     location,
     contact,
@@ -531,12 +529,11 @@ const updateRestaurant = async (req, res,next) => {
     pictures,
     _id,
   } = req.body; // Allowed fields to update
-  
-  console.log("update restaurant", req.body);
-    
+
   if (!_id) {
     return next(new AppError("User ID is required", 400));
   }
+  console.log("update restaurant", req.body.opened);
 
   try {
     const restaurant = await Restaurant.findById(_id);
@@ -554,6 +551,7 @@ const updateRestaurant = async (req, res,next) => {
     if (pictures) restaurant.pictures = pictures;
     if (pictures) restaurant.pictures = pictures;
     if (contact) restaurant.contact = contact;
+    if (typeof opened !== "undefined") restaurant.opened = !restaurant.opened;
 
     await restaurant.save();
 
@@ -561,25 +559,28 @@ const updateRestaurant = async (req, res,next) => {
 
     res.json({ message: "Restaurant updated successfully" });
   } catch (err) {
-   console.log("update restaurant error", err);
-   
-  // Check top-level error
-  if (err.code === 11000 && err.keyPattern?.contact) {
-    return res.json({ error: "Phone number already exists" });
-  }
+    console.log("update restaurant error", err);
 
-  // Check nested errorResponse (MongoDB driver)
-  if (err.errorResponse?.code === 11000 && err.errorResponse?.keyPattern?.contact) {
-    return res.json({ error: "Phone number already exists" });
-  }
+    // Check top-level error
+    if (err.code === 11000 && err.keyPattern?.contact) {
+      return res.json({ error: "Phone number already exists" });
+    }
 
-  // Check nested cause (Mongoose 7+)
-  if (err.cause?.code === 11000 && err.cause?.keyPattern?.contact) {
-    return res.json({ error: "Phone number already exists" });
-  }
+    // Check nested errorResponse (MongoDB driver)
+    if (
+      err.errorResponse?.code === 11000 &&
+      err.errorResponse?.keyPattern?.contact
+    ) {
+      return res.json({ error: "Phone number already exists" });
+    }
 
-  // Fallback: generic error
-  return res.status(500).json({ error: err.message || "Server error" })
+    // Check nested cause (Mongoose 7+)
+    if (err.cause?.code === 11000 && err.cause?.keyPattern?.contact) {
+      return res.json({ error: "Phone number already exists" });
+    }
+
+    // Fallback: generic error
+    return res.status(500).json({ error: err.message || "Server error" });
   }
 };
 
@@ -587,7 +588,7 @@ const updateRestaurant = async (req, res,next) => {
 const updateRestaurantBankInformation = async (req, res) => {
   const { id } = req.params;
   const { bankName, bankAccountName, bankAccountNumber } = req.body;
-  console.log('bank info', req.body);
+  console.log("bank info", req.body);
   const bankCode = await getBankIdByName(bankName);
   let subAccountId = null;
   try {
@@ -688,7 +689,6 @@ const searchByKeyWord = async (req, res, next) => {
   } catch (error) {
     next(new AppError("Internal Problem", 500)); // Ensure next() is available
   }
-  
 };
 
 // Delete a restaurant by ID
@@ -755,7 +755,7 @@ const getFavoriteRestaurantsByUserId = async (req, res) => {
 
 const login = async (req, res) => {
   const { phoneNumber, password } = req.body;
-  console.log("login restaurant hit",phoneNumber, password);
+  console.log("login restaurant hit", phoneNumber, password);
   try {
     const restaurant = await Restaurant.login(phoneNumber, password);
     const token = createToken(restaurant._id);
@@ -767,13 +767,11 @@ const login = async (req, res) => {
     res.json({ error: err.message });
   }
 };
-const logout = (req, res,) => {
+const logout = (req, res) => {
   console.log("logout restaurant hit");
   res.cookie("jwt", "");
   res.json({ status: "logged out successfully !" });
 };
-
-
 
 module.exports = {
   createRestaurant,

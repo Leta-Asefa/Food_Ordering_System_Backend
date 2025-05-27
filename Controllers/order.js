@@ -225,7 +225,7 @@ const getUserOrderById = async (req, res) => {
           groupedOrders.pickedUp.push(order);
           break;
         case "OnTransit":
-          groupedOrders.onTransit.push(order);
+          groupedOrders.processing.push(order);
           break;
         case "Delivered":
           groupedOrders.delivered.push(order);
