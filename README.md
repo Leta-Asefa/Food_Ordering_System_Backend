@@ -11,7 +11,6 @@ A full-featured, scalable backend system for a food ordering and delivery platfo
   - Password hashing (bcrypt)
   - OTP verification via Twilio
   - Input sanitization (MongoDB, CORS)
-  - `.env` environment configuration
 
 - 📦 **Core Functionalities**
   - Order processing & delivery tracking
